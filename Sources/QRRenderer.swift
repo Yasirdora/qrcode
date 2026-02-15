@@ -1,0 +1,358 @@
+import UIKit
+import CoreImage
+
+/// Renders QR symbols with CoreImage's native `CIQRCodeGenerator`, then
+/// composites color, quiet zone, center logo and the Context Band with
+/// CoreGraphics. No third-party dependency — the whole pipeline is platform.
+enum QRRenderer {
+
+    private static let ciContext = CIContext()
+
+    // MARK: - Public API
+
+    /// Preview/export image at the design's export size. Dispatches on the
+    /// design's symbology: QR takes the original path, Aztec/PDF417/Code 128
+    /// are CoreImage siblings, EAN-13/EAN-8 go through the hand-rolled encoder.
+    static func image(payload: String, design: DesignOptions) -> UIImage? {
+        switch design.symbology {
+        case .qr:
+            return renderQR(payload: payload, design: design)
+        case .aztec, .pdf417, .code128:
+            return renderCoreImageCode(payload: payload, design: design)
+        case .ean13, .ean8:
+            return renderEAN(payload: payload, design: design)
+        }
+    }
+
+    private static func renderQR(payload: String, design: DesignOptions) -> UIImage? {
+        // Any module styling switches to the custom path renderer; plain
+        // square codes keep the pixel-quantized CI upscale (fastest, sharpest).
+        guard design.isPlainStyle else {
+            return StyledQRRenderer.image(payload: payload, design: design)
+        }
+        guard let qr = cgQR(payload: payload, design: design) else { return nil }
+        let size = CGFloat(design.exportSize)
+        // Pixel quantization: the CI symbol is exactly one pixel per module,
+        // so render each module as an INTEGER number of pixels. Fractional
+        // module widths are what smeared edges before. Leftover space splits
+        // evenly and simply becomes extra quiet zone.
+        let symbol = qr.width
+        let modulePx = (size / CGFloat(symbol + 2 * design.quietModules)).rounded(.down)
+        let codeW = modulePx * CGFloat(symbol)
+        let margin = ((size - codeW) / 2).rounded()
+        let codeRect = CGRect(x: margin, y: margin, width: codeW, height: codeW)
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1 // pixel-exact; the canvas is already device-independent
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format)
+        let base = renderer.image { ctx in
+            // The CI symbol is a tiny bitmap (e.g. 29×29 modules) — upscale
+            // nearest-neighbor or the modules smear into grey mush.
+            ctx.cgContext.interpolationQuality = .none
+            design.bgUIColor.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: size, height: size))
+            UIImage(cgImage: qr).draw(in: codeRect.integral)
+
+            if let logoData = design.logoPNG, let logo = UIImage(data: logoData) {
+                ctx.cgContext.interpolationQuality = .high // logos should stay smooth
+                drawLogo(logo, in: ctx.cgContext, codeRect: codeRect.integral, design: design)
+            }
+        }
+        guard design.ctaEnabled else { return base }
+        return addContextBand(to: base, payload: payload, design: design)
+    }
+
+    /// Aztec, PDF417 and Code 128 — same CoreImage family as QR, one filter
+    /// swap each. Aspect ratio is preserved (PDF417 and Code 128 are wide);
+    /// the logo composite stays limited to 2D symbologies with real EC.
+    private static func renderCoreImageCode(payload: String, design: DesignOptions) -> UIImage? {
+        let filterName: String
+        switch design.symbology {
+        case .aztec: filterName = "CIAztecCodeGenerator"
+        case .pdf417: filterName = "CIPDF417BarcodeGenerator"
+        case .code128: filterName = "CICode128BarcodeGenerator"
+        default: return nil
+        }
+        guard let filter = CIFilter(name: filterName) else { return nil }
+        filter.setValue(Data(payload.utf8), forKey: "inputMessage")
+        guard var output = filter.outputImage else { return nil }
+
+        if let colorize = CIFilter(name: "CIFalseColor") {
+            colorize.setValue(output, forKey: kCIInputImageKey)
+            colorize.setValue(CIColor(color: design.fgUIColor), forKey: "inputColor0")
+            colorize.setValue(CIColor(color: design.bgUIColor), forKey: "inputColor1")
+            if let colored = colorize.outputImage { output = colored }
+        }
+        guard let cg = ciContext.createCGImage(output, from: output.extent) else { return nil }
+
+        let size = CGFloat(design.exportSize)
+        // Same quantization rule: integer pixels per module horizontally.
+        let symbolW = cg.width
+        let modulePx = (size / CGFloat(symbolW + 2 * design.quietModules)).rounded(.down)
+        let aspect = output.extent.height / output.extent.width
+        var codeW = modulePx * CGFloat(symbolW)
+        var codeH = (codeW * aspect).rounded()
+        let maxH = size - 2 * modulePx * CGFloat(design.quietModules)
+        if codeH > maxH {
+            codeH = maxH.rounded()
+            codeW = (codeH / aspect).rounded()
+        }
+        let codeRect = CGRect(x: ((size - codeW) / 2).rounded(), y: ((size - codeH) / 2).rounded(),
+                              width: codeW, height: codeH)
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format)
+        let base = renderer.image { ctx in
+            // Same nearest-neighbor rule as QR: the CI output is a tiny
+            // module bitmap, smooth upscaling would smear it.
+            ctx.cgContext.interpolationQuality = .none
+            design.bgUIColor.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: size, height: size))
+            UIImage(cgImage: cg).draw(in: codeRect.integral)
+
+            if design.symbology.carriesRichPayload,
+               let logoData = design.logoPNG, let logo = UIImage(data: logoData) {
+                ctx.cgContext.interpolationQuality = .high
+                drawLogo(logo, in: ctx.cgContext, codeRect: codeRect.integral, design: design)
+            }
+        }
+        guard design.ctaEnabled else { return base }
+        return addContextBand(to: base, payload: payload, design: design)
+    }
+
+    /// EAN-13 / EAN-8 — bars from the hand-rolled module row, digits printed
+    /// below in GS1 style. No logo, ever: occluding a linear code kills it.
+    private static func renderEAN(payload: String, design: DesignOptions) -> UIImage? {
+        guard let modules = EANEncoder.modules(payload, kind: design.symbology),
+              let digits = EANEncoder.normalized(payload, kind: design.symbology) else { return nil }
+
+        let size = CGFloat(design.exportSize)
+        // Integer module width here too — fractional bars anti-alias grey.
+        let totalModules = modules.count + 2 * design.quietModules
+        let modulePx = (size / CGFloat(totalModules)).rounded(.down)
+        let codeW = modulePx * CGFloat(modules.count)
+        let barsH = codeW * 0.52
+        let digitsH = modulePx * 7
+        let codeH = barsH + digitsH + modulePx * 2
+        let origin = CGPoint(x: ((size - codeW) / 2).rounded(), y: ((size - codeH) / 2).rounded())
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format)
+        return renderer.image { ctx in
+            design.bgUIColor.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: size, height: size))
+
+            design.fgUIColor.setFill()
+            for (i, bit) in modules.enumerated() where bit == "1" {
+                ctx.fill(CGRect(x: origin.x + CGFloat(i) * modulePx,
+                                y: origin.y,
+                                width: modulePx,
+                                height: barsH))
+            }
+
+            let font = UIFont.monospacedDigitSystemFont(ofSize: digitsH, weight: .regular)
+            let attr: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: design.fgUIColor]
+            let textSize = (digits as NSString).size(withAttributes: attr)
+            (digits as NSString).draw(
+                at: CGPoint(x: (size - textSize.width) / 2, y: origin.y + barsH + modulePx * 2),
+                withAttributes: attr
+            )
+        }
+    }
+
+    static func pngData(payload: String, design: DesignOptions) -> Data? {
+        image(payload: payload, design: design)?.pngData()
+    }
+
+    /// PDF export: the QR rendered at 2048px embedded in a vector page — crisp
+    /// for any print workflow reachable from the iOS share sheet.
+    static func pdfData(payload: String, design: DesignOptions) -> Data? {
+        var hiRes = design
+        hiRes.exportSize = 2048
+        guard let img = image(payload: payload, design: hiRes) else { return nil }
+        let pageRect = CGRect(origin: .zero, size: img.size)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        return renderer.pdfData { ctx in
+            ctx.beginPage()
+            img.draw(in: pageRect)
+        }
+    }
+
+    /// Destination label shown under the code in the Context Band — the trust
+    /// layer: people see where the code leads before they scan it.
+    /// Human-readable destination for the context band. MUST be
+    /// payload-type-aware: the band is printed under the code on stickers
+    /// and posters, so it may never leak secrets (Wi-Fi passwords) or
+    /// personal data beyond what the code type itself advertises.
+    static func destinationLabel(payload: String) -> String {
+        if let host = URL(string: payload)?.host, !host.isEmpty {
+            return host.replacingOccurrences(of: #"^www\."#, with: "", options: .regularExpression)
+        }
+        if payload.hasPrefix("WIFI:") {
+            // "WIFI:T:WPA;S:CafeGuest;P:hunter2;;" — the SSID only, NEVER the
+            // P: password field.
+            if let ssid = wifiField("S", in: payload), !ssid.isEmpty { return "Wi-Fi: \(ssid)" }
+            return "Wi-Fi network"
+        }
+        if payload.contains("BEGIN:VCARD") {
+            for line in payload.components(separatedBy: .newlines) where line.hasPrefix("FN:") {
+                let name = String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                if !name.isEmpty { return name }
+            }
+            return "Contact card"
+        }
+        if payload.hasPrefix("bitcoin:") {
+            let address = String(payload.dropFirst("bitcoin:".count).prefix(while: { $0 != "?" }))
+            return address.count > 18 ? "Bitcoin: \(address.prefix(10))…\(address.suffix(6))" : "Bitcoin: \(address)"
+        }
+        if payload.hasPrefix("tel:") { return String(payload.dropFirst(4)) }
+        if payload.hasPrefix("mailto:") {
+            return String(payload.dropFirst(7).prefix(while: { $0 != "?" }))
+        }
+        if payload.hasPrefix("sms:") || payload.hasPrefix("SMSTO:") {
+            let number = payload.components(separatedBy: ":").dropFirst().first ?? ""
+            return "SMS: \(number)"
+        }
+        if payload.hasPrefix("geo:") { return "Location: \(payload.dropFirst(4))" }
+        if payload.hasPrefix("BEGIN:VEVENT") || payload.hasPrefix("BEGIN:VCALENDAR") {
+            for line in payload.components(separatedBy: .newlines) where line.hasPrefix("SUMMARY:") {
+                return "Event: \(line.dropFirst(8))"
+            }
+            return "Calendar event"
+        }
+        let first = payload.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: .newlines).first ?? ""
+        return first.count > 42 ? "\(first.prefix(42))…" : first
+    }
+
+    /// Extracts a field from a WIFI: payload, honoring backslash-escaped
+    /// separators (\; \: \\).
+    private static func wifiField(_ key: String, in payload: String) -> String? {
+        let body = String(payload.dropFirst(5)) // after "WIFI:"
+        var fields: [String] = []
+        var current = ""
+        var escaped = false
+        for ch in body {
+            if escaped { current.append(ch); escaped = false; continue }
+            if ch == "\\" { escaped = true; continue }
+            if ch == ";" { fields.append(current); current = ""; continue }
+            current.append(ch)
+        }
+        fields.append(current)
+        for field in fields where field.hasPrefix("\(key):") {
+            return String(field.dropFirst(2))
+        }
+        return nil
+    }
+
+    // MARK: - Internals
+
+    private static func cgQR(payload: String, design: DesignOptions) -> CGImage? {
+        guard let filter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
+        filter.setValue(Data(payload.utf8), forKey: "inputMessage")
+        filter.setValue(design.errorLevel.rawValue, forKey: "inputCorrectionLevel")
+        guard var output = filter.outputImage else { return nil }
+
+        // Recolor the 1-bit symbol to the design's palette.
+        if let colorize = CIFilter(name: "CIFalseColor") {
+            colorize.setValue(output, forKey: kCIInputImageKey)
+            colorize.setValue(CIColor(color: design.fgUIColor), forKey: "inputColor0")
+            colorize.setValue(CIColor(color: design.bgUIColor), forKey: "inputColor1")
+            if let colored = colorize.outputImage { output = colored }
+        }
+        return ciContext.createCGImage(output, from: output.extent)
+    }
+
+    private static func drawLogo(_ logo: UIImage, in ctx: CGContext, codeRect: CGRect, design: DesignOptions) {
+        let side = codeRect.width * CGFloat(design.logoScale)
+        let pad = side * 0.14
+        let box = CGRect(
+            x: codeRect.midX - side / 2 - pad,
+            y: codeRect.midY - side / 2 - pad,
+            width: side + 2 * pad,
+            height: side + 2 * pad
+        )
+        // White knockout behind the logo so modules never touch it.
+        design.bgUIColor.setFill()
+        let path = UIBezierPath(roundedRect: box, cornerRadius: box.width * 0.22)
+        ctx.addPath(path.cgPath)
+        ctx.fillPath()
+        logo.draw(in: box.insetBy(dx: pad, dy: pad))
+    }
+
+    private static func addContextBand(to base: UIImage, payload: String, design: DesignOptions) -> UIImage {
+        let w = base.size.width
+        let band = (w * 0.24).rounded()
+        // scale = 1 is load-bearing: `base` is a scale-1.0 image whose size
+        // IS pixels. A default renderer uses UIScreen.scale (3×), resampling
+        // the code up 3× with smooth interpolation — blurring exactly the
+        // crisp module edges the pixel quantisation preserved, and tripling
+        // the exported file size.
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: w, height: base.size.height + band), format: format)
+        return renderer.image { ctx in
+            design.bgUIColor.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: w, height: base.size.height + band))
+            base.draw(at: .zero)
+
+            design.fgUIColor.setFill()
+            ctx.fill(CGRect(x: 0, y: base.size.height, width: w, height: band))
+
+            let cta = design.ctaText.trimmingCharacters(in: .whitespaces).isEmpty ? "Scan me" : design.ctaText
+            let ctaFont = UIFont.systemFont(ofSize: band * 0.34, weight: .bold)
+            let ctaAttr: [NSAttributedString.Key: Any] = [.font: ctaFont, .foregroundColor: design.bgUIColor]
+            let ctaSize = (cta as NSString).size(withAttributes: ctaAttr)
+            (cta as NSString).draw(
+                at: CGPoint(x: (w - ctaSize.width) / 2, y: base.size.height + band * 0.14),
+                withAttributes: ctaAttr
+            )
+
+            let dest = destinationLabel(payload: payload)
+            if !dest.isEmpty {
+                let destFont = UIFont.monospacedSystemFont(ofSize: band * 0.2, weight: .regular)
+                let destAttr: [NSAttributedString.Key: Any] = [
+                    .font: destFont,
+                    .foregroundColor: design.bgUIColor.withAlphaComponent(0.75),
+                ]
+                let destSize = (dest as NSString).size(withAttributes: destAttr)
+                (dest as NSString).draw(
+                    at: CGPoint(x: (w - destSize.width) / 2, y: base.size.height + band * 0.62),
+                    withAttributes: destAttr
+                )
+            }
+        }
+    }
+}
+
+extension DesignOptions {
+    var fgUIColor: UIColor { UIColor(hex: fgHex) }
+    var bgUIColor: UIColor { UIColor(hex: bgHex) }
+}
+
+extension UIColor {
+    convenience init(hex: String) {
+        let c = Scanability.rgb(hex: hex)
+        self.init(red: c.r, green: c.g, blue: c.b, alpha: 1)
+    }
+
+    var hexString: String {
+        // ColorPicker hands us extended-sRGB; a Display P3 red arrives as
+        // r ≈ 1.09 → Int(1.09×255) = 278 → "%02X" = "116" → "#1160000" —
+        // a bright red silently parsing as near-black downstream. Convert
+        // to the sRGB space first, then clamp and ROUND (Int() truncates,
+        // drifting in-gamut colors on every picker round-trip).
+        let target = CGColorSpace(name: CGColorSpace.sRGB)!
+        let srgb: UIColor
+        if let converted = cgColor.converted(to: target, intent: .defaultIntent, options: nil) {
+            srgb = UIColor(cgColor: converted)
+        } else {
+            srgb = self
+        }
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+        srgb.getRed(&r, green: &g, blue: &b, alpha: nil)
+        let byte = { (v: CGFloat) in Int((min(max(v, 0), 1) * 255).rounded()) }
+        return String(format: "#%02X%02X%02X", byte(r), byte(g), byte(b))
+    }
+}

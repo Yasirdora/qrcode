@@ -86,17 +86,20 @@ enum QRRenderer {
         guard let cg = ciContext.createCGImage(output, from: output.extent) else { return nil }
 
         let size = CGFloat(design.exportSize)
-        // Same quantization rule: integer pixels per module horizontally.
+        // One module size for BOTH axes. The earlier version clamped an
+        // over-tall code by recomputing the width from the aspect ratio, which
+        // left the bars on fractional pixel boundaries and let anti-aliasing
+        // grey them — the exact failure this quantisation exists to prevent.
+        // Solving for the module size instead keeps every bar an integer
+        // number of pixels wide.
         let symbolW = cg.width
-        let modulePx = (size / CGFloat(symbolW + 2 * design.quietModules)).rounded(.down)
-        let aspect = output.extent.height / output.extent.width
-        var codeW = modulePx * CGFloat(symbolW)
-        var codeH = (codeW * aspect).rounded()
-        let maxH = size - 2 * modulePx * CGFloat(design.quietModules)
-        if codeH > maxH {
-            codeH = maxH.rounded()
-            codeW = (codeH / aspect).rounded()
-        }
+        let symbolH = cg.height
+        let quiet = CGFloat(design.quietModules)
+        let modulePx = min((size / (CGFloat(symbolW) + 2 * quiet)).rounded(.down),
+                           (size / (CGFloat(symbolH) + 2 * quiet)).rounded(.down))
+        guard modulePx >= 1 else { return nil }
+        let codeW = modulePx * CGFloat(symbolW)
+        let codeH = modulePx * CGFloat(symbolH)
         let codeRect = CGRect(x: ((size - codeW) / 2).rounded(), y: ((size - codeH) / 2).rounded(),
                               width: codeW, height: codeH)
 
@@ -166,17 +169,26 @@ enum QRRenderer {
         image(payload: payload, design: design)?.pngData()
     }
 
-    /// PDF export: the QR rendered at 2048px embedded in a vector page — crisp
-    /// for any print workflow reachable from the iOS share sheet.
+    /// PDF export: the code rasterised at 2048px on a print-sized page.
+    /// The page previously matched the image at 2048×2048 points, about 28
+    /// inches square, which every print dialog then had to scale down. 612pt
+    /// (8.5") square suits labels and posters, and the aspect ratio is
+    /// preserved so a Context Band still fits.
     static func pdfData(payload: String, design: DesignOptions) -> Data? {
         var hiRes = design
         hiRes.exportSize = 2048
         guard let img = image(payload: payload, design: hiRes) else { return nil }
-        let pageRect = CGRect(origin: .zero, size: img.size)
+        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 612)
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
         return renderer.pdfData { ctx in
             ctx.beginPage()
-            img.draw(in: pageRect)
+            let inset = pageRect.insetBy(dx: 36, dy: 36)
+            let scale = min(inset.width / img.size.width, inset.height / img.size.height)
+            let drawRect = CGRect(x: inset.midX - img.size.width * scale / 2,
+                                  y: inset.midY - img.size.height * scale / 2,
+                                  width: img.size.width * scale,
+                                  height: img.size.height * scale)
+            img.draw(in: drawRect)
         }
     }
 
@@ -264,7 +276,10 @@ enum QRRenderer {
         return ciContext.createCGImage(output, from: output.extent)
     }
 
-    private static func drawLogo(_ logo: UIImage, in ctx: CGContext, codeRect: CGRect, design: DesignOptions) {
+    /// Shared with StyledQRRenderer deliberately: both renderers must compose
+    /// the logo identically, and this pair of functions used to exist twice —
+    /// the copies had already drifted once (the Context Band's scale bug).
+    static func drawLogo(_ logo: UIImage, in ctx: CGContext, codeRect: CGRect, design: DesignOptions) {
         let side = codeRect.width * CGFloat(design.logoScale)
         let pad = side * 0.14
         let box = CGRect(
@@ -281,7 +296,7 @@ enum QRRenderer {
         logo.draw(in: box.insetBy(dx: pad, dy: pad))
     }
 
-    private static func addContextBand(to base: UIImage, payload: String, design: DesignOptions) -> UIImage {
+    static func addContextBand(to base: UIImage, payload: String, design: DesignOptions) -> UIImage {
         let w = base.size.width
         let band = (w * 0.24).rounded()
         // scale = 1 is load-bearing: `base` is a scale-1.0 image whose size

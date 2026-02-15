@@ -8,6 +8,8 @@ struct ContentForm: View {
     @Binding var content: ContentState
     var symbology: Symbology = .qr
     @State private var contactPickerPresented = false
+    /// The Wi-Fi password field is masked by default; this drives its reveal.
+    @State private var wifiPasswordVisible = false
 
     var body: some View {
         if !symbology.carriesRichPayload {
@@ -41,7 +43,30 @@ struct ContentForm: View {
             }
         case .wifi:
             LabeledField("Network name (SSID)") { TextField("MyHomeWifi", text: $content.wifi.ssid) }
-            LabeledField("Password") { TextField("Password", text: $content.wifi.password) }
+            // Masked by default: the Wi-Fi password is the one secret this app
+            // handles, and a plain field exposes it to shoulder-surfing,
+            // screenshots and screen recording.
+            LabeledField("Password") {
+                HStack(spacing: 8) {
+                    Group {
+                        if wifiPasswordVisible {
+                            TextField("Password", text: $content.wifi.password)
+                        } else {
+                            SecureField("Password", text: $content.wifi.password)
+                        }
+                    }
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    Button {
+                        wifiPasswordVisible.toggle()
+                    } label: {
+                        Image(systemName: wifiPasswordVisible ? "eye.slash" : "eye")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(wifiPasswordVisible ? "Hide password" : "Show password")
+                }
+            }
             Picker("Security", selection: $content.wifi.encryption) {
                 Text("WPA/WPA2/WPA3").tag("WPA")
                 Text("WEP").tag("WEP")
@@ -85,11 +110,25 @@ struct ContentForm: View {
             LabeledField("Longitude") { TextField("-122.4194", text: $content.geoLng).keyboardType(.numbersAndPunctuation) }
         case .event:
             LabeledField("Event title") { TextField("Launch party", text: $content.event.title) }
+            // The pickers WRITE their value on first appearance. The old
+            // binding only substituted `.now` on read, so a filled-in title
+            // plus an untouched date left `start` nil and the payload empty —
+            // the screen showed a date the encoder never saw.
             DatePicker("Starts", selection: Binding($content.event.start, replacingNilWith: .now), displayedComponents: [.date, .hourAndMinute])
+                .onAppear { if $content.event.start.wrappedValue == nil { $content.event.start.wrappedValue = .now } }
             DatePicker("Ends", selection: Binding($content.event.end, replacingNilWith: .now.addingTimeInterval(3600)), displayedComponents: [.date, .hourAndMinute])
+                .onAppear { if $content.event.end.wrappedValue == nil { $content.event.end.wrappedValue = .now.addingTimeInterval(3600) } }
             LabeledField("Location") { TextField("Location", text: $content.event.location) }
         case .crypto:
             LabeledField("Bitcoin address") { TextField("bc1q…", text: $content.cryptoAddress).textInputAutocapitalization(.never).autocorrectionDisabled() }
+            // Inline validation: the encoder refuses an address that fails its
+            // checksum, and without this the refusal would look like a bug.
+            if !content.cryptoAddress.isEmpty, !BitcoinAddress.isValid(content.cryptoAddress) {
+                Label("This address is not valid: its checksum does not match.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
             LabeledField("Amount (BTC, optional)") { TextField("0.001", text: $content.cryptoAmount).keyboardType(.decimalPad) }
         case .whatsapp:
             LabeledField("Phone number (with country code)") { TextField("+1 555 123 4567", text: $content.whatsappNumber).keyboardType(.phonePad) }
@@ -264,12 +303,19 @@ struct DesignSheet: View {
                 }
 
                 Section {
+                    // Disabled rather than silently ignored: the renderer drops
+                    // the band when the background is transparent.
                     Toggle("Context band", isOn: $model.design.ctaEnabled)
-                    if model.design.ctaEnabled {
+                        .disabled(model.design.transparentBg)
+                    if model.design.ctaEnabled, !model.design.transparentBg {
                         TextField("Scan to view menu", text: $model.design.ctaText)
                     }
                 } footer: {
-                    Text("Prints a strip under the code: your call-to-action plus the destination, so people know what they're scanning before they scan it.")
+                    if model.design.transparentBg {
+                        Text("Unavailable while the background is transparent — the band needs something to print on.")
+                    } else {
+                        Text("Prints a strip under the code: your call-to-action plus the destination, so people know what they're scanning before they scan it.")
+                    }
                 }
             }
             .navigationTitle("Design")
@@ -337,11 +383,17 @@ private struct DesignPreviewCell: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .task(id: model.design) { render() }
-        .task(id: model.content) { render() }
+        .task(id: model.design) { await render() }
+        .task(id: model.content) { await render() }
     }
 
-    private func render() {
+    /// Debounced and awaited. Dragging the gradient slider previously started
+    /// one detached render per step, none of them cancellable.
+    private func render() async {
+        if image != nil {
+            try? await Task.sleep(for: .milliseconds(120))
+            guard !Task.isCancelled else { return }
+        }
         let payload = model.payload
         guard !payload.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             image = nil
@@ -349,10 +401,11 @@ private struct DesignPreviewCell: View {
         }
         var design = model.design
         design.exportSize = 512
-        Task.detached(priority: .userInitiated) {
-            let img = QRRenderer.image(payload: payload, design: design)
-            await MainActor.run { image = img }
-        }
+        let rendered = await Task.detached(priority: .userInitiated) {
+            QRRenderer.image(payload: payload, design: design)
+        }.value
+        guard !Task.isCancelled else { return }
+        image = rendered
     }
 }
 
@@ -361,6 +414,8 @@ private struct DesignPreviewCell: View {
 private struct ThemeGallery: View {
     @Bindable var model: AppModel
     @State private var thumbs: [String: UIImage] = [:]
+    // Scales with the caption underneath instead of clipping it.
+    @ScaledMetric(relativeTo: .caption2) private var thumb = 76
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -377,12 +432,15 @@ private struct ThemeGallery: View {
                                 if let img = thumbs[preset.id] {
                                     Image(uiImage: img)
                                         .resizable()
-                                        .interpolation(.none)
+                                        // Rendered at 256px and shown at ~228px:
+                                        // a non-integer nearest-neighbour
+                                        // downscale drops whole module rows.
+                                        .interpolation(.high)
                                         .scaledToFit()
                                         .padding(6)
                                 }
                             }
-                            .frame(width: 76, height: 76)
+                            .frame(width: thumb, height: thumb)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                                     .stroke(preset.matches(model.design) ? Color.accentColor : .clear, lineWidth: 2)
@@ -403,9 +461,10 @@ private struct ThemeGallery: View {
     }
 
     private func renderThumbs() {
-        // Empty payloads still deserve informative thumbnails.
+        // Empty payloads still deserve informative thumbnails — a neutral
+        // example, not a branded URL for a domain that does not exist.
         let payload = model.payload.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? "https://qrflow.app" : model.payload
+            ? "https://example.com" : model.payload
         Task.detached(priority: .userInitiated) {
             var map: [String: UIImage] = [:]
             for preset in DesignPreset.allCases {

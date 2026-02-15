@@ -1,84 +1,126 @@
-# QRFlow Studio for iOS — Developer Handoff
+<table>
+  <tr>
+    <td><img src="Screenshots/01-onboarding.png" width="240" alt="Onboarding"></td>
+    <td><img src="Screenshots/02-create.png" width="240" alt="Create surface with a live QR code and the scanability score"></td>
+    <td><img src="Screenshots/03-styled.png" width="240" alt="Fluid modules with a gradient and circular finder dots"></td>
+  </tr>
+  <tr>
+    <td><img src="Screenshots/04-ean.png" width="240" alt="EAN-13 barcode with verified check digits"></td>
+    <td><img src="Screenshots/05-design.png" width="240" alt="Design sheet with the live preview and theme gallery"></td>
+    <td></td>
+  </tr>
+</table>
 
-**Date:** 9 August 2026 · **Stack:** SwiftUI, iOS 26 · **Patterned after:** `EinbürgerungLiD-Handoff`
+# Qr.Code
 
-A native iOS edition of the QRFlow Studio web app, built to the same quality bar as the
-reference handoff: single `@Observable` model, pure testable logic, token colors,
-shared components, haptic vocabulary, privacy manifest — **no third-party dependencies**.
+An iOS app for generating and scanning QR codes and barcodes. It runs entirely
+on the device: no account, no network requests, no third-party dependencies.
 
-## What shipped verified
+## Scanability
 
-The pure logic core (`Models`, `PayloadBuilder`, `Scanability`) was compiled and executed
-with `swiftc` against a 15-assertion runtime harness before any UI was written:
+Most QR tools will produce an unreadable code without warning. This one scores
+the design before export — contrast, module density, quiet zone, logo
+occlusion, styling cost — and reports the checks behind the score.
 
+The score is backed by tests rather than judgement. `RoundTripTests` renders a
+symbol and decodes it with the same Vision framework real scanners use, across
+every module style, every error-correction level, gradients, logo sizes and
+each symbology. The logo slider's 0.35 ceiling is asserted decodable, so a
+change that breaks scannability fails the build.
+
+## Features
+
+**Payload types (11)** — URL, text, Wi-Fi credentials, contact card, SMS,
+phone, geo, calendar event, Bitcoin payment, WhatsApp, and a raw mode for
+anything a scanner understands (SEPA/EPC transfers, deep links, proprietary
+schemes).
+
+**Symbologies (6)** — QR, Aztec, PDF417, Code 128, EAN-13, EAN-8. EAN check
+digits are verified.
+
+**Styling** — square, dots, rounded and fluid module shapes; rounded or
+circular finder frames; gradients; transparent backgrounds; centre logos; a
+theme gallery. Styled output is drawn as vector paths from the symbol matrix,
+so it stays sharp at any export size.
+
+**Export** — PNG up to 4096 px, and a print-sized PDF rasterised at 2048 px.
+
+**Context Band** — an optional strip below the code showing a call to action
+and the destination, so a scan target is visible before scanning. The label is
+derived from the payload type; a Wi-Fi password is never printed.
+
+**System integration** — App Intents for Siri and Shortcuts, and a share
+extension for turning a page or selected text into a code.
+
+**Scanner** — camera, photo library and clipboard input. Decodes QR, Aztec,
+PDF417, Code 128, EAN and Data Matrix.
+
+## Architecture
+
+| Layer | Files | Responsibility |
+| --- | --- | --- |
+| Model and encoding | `Models.swift`, `PayloadBuilder.swift`, `EANEncoder.swift`, `Scanability.swift` | Payload construction, EAN check digits, Bitcoin address checksums, scanability rules. Imports Foundation and CryptoKit only, so it is testable without a simulator. |
+| Rendering | `QRRenderer.swift`, `StyledQRRenderer.swift` | Integer-pixel-per-module rasterisation, the vector path renderer, logo composition, the Context Band, PNG and PDF output. |
+| Capture | `ScanViews.swift` | AVFoundation camera, Vision decoding, permission states. |
+| Interface | `QRFlowApp.swift`, `AppModel.swift`, `CreateViews.swift`, `CreateFormViews.swift`, `HistoryViews.swift`, `ComponentViews.swift`, `OnboardingViews.swift` | One `@Observable` model holds state, navigation and persistence. |
+| Integration | `QRFlowIntents.swift`, `ShareExtension/` | App Intents and the share extension, built against the same renderer. |
+
+Constraints held throughout: no third-party dependencies, no network code, and
+no UI imports below the view layer.
+
+## Build
+
+Requires Xcode 26 or newer; the deployment target is iOS 26.0.
+
+```bash
+open QRFlow.xcodeproj
 ```
-PASS — wifi escaping        PASS — vcard structure        PASS — contrast b/w = 21.0
-PASS — scheme passthrough   PASS — event validation       PASS — default score 100
-PASS — whatsapp digits      PASS — version bounds         PASS — quiet zone flagged
-… 15/15 ALL TESTS PASSED
+
+## Tests
+
+```bash
+xcodebuild -project QRFlow.xcodeproj -scheme QRFlow \
+  -destination 'platform=iOS Simulator,name=iPhone 18 Pro' test
 ```
 
-The XCTest suites in `Tests/` pin the same behavior inside Xcode.
-**The SwiftUI/UIKit layer is written against documented iOS APIs but has NOT been compiled —
-this machine has no iOS SDK. First build in Xcode is the moment of truth; treat it as such.**
+Replace the destination with an installed simulator (`xcrun simctl list devices
+available`). 64 tests, all passing.
 
-## Architecture in one paragraph
+| Area | Coverage |
+| --- | --- |
+| Round trips | Every module style × every error-correction level, gradients, dense payloads, and the linear symbologies — each rendered and decoded with Vision. |
+| Logo ceiling | Decodability asserted up to the 0.35 the interface allows. |
+| Payload correctness | Wi-Fi escaping, vCard CRLF and value escaping, wrapped and deterministic iCalendar records, WhatsApp encoding. |
+| Bitcoin addresses | Base58Check and bech32/bech32m checksums. An invalid address is refused rather than encoded. |
+| Scanability | Contrast, GS1 quiet zones per symbology, density and occlusion thresholds, preset contrast guarantees. |
 
-Single `@Observable AppModel` (all state, tabs, toast, UserDefaults persistence). Pure
-Foundation core: `PayloadBuilder` (11 content types → QR payloads, ISO/IEC 18004 version
-estimation) and `Scanability` (WCAG contrast, density, logo-occlusion-vs-EC, quiet-zone
-scoring). `QRRenderer` is 100% platform: `CIQRCodeGenerator` + `CIFalseColor` +
-CoreGraphics compositing (quiet zone, logo knockout, Context Band, PDF via
-`UIGraphicsPDFRenderer`). Shared components in `ComponentViews` (`panel`, `PanelRow`,
-`ScoreRing`, `CheckRow`, `ToastView`). History persists via UserDefaults (privacy
-manifest reason `CA92.1`).
+## Accessibility
 
-## File map
+Toasts are announced to VoiceOver. Tappable rows are `Button`s, so Switch
+Control and Full Keyboard Access can reach them. Controls containing text — the
+tab capsule, theme thumbnails — scale with Dynamic Type.
 
-| File | Role |
-|---|---|
-| `Sources/QRFlowApp.swift` | `@main`, RootView (onboarding ↔ shell + toast), TabView shell |
-| `Sources/AppModel.swift` | `@Observable` state, history persistence, toast lifecycle |
-| `Sources/Models.swift` | `ContentType`, `ContentState`, `DesignOptions`, `HistoryEntry` — Codable, SwiftUI-free |
-| `Sources/PayloadBuilder.swift` | Payloads for 11 content types + summaries + version estimation |
-| `Sources/Scanability.swift` | The 0–100 scanability engine |
-| `Sources/QRRenderer.swift` | CoreImage QR → colored, quiet-zoned, logo, Context Band, PNG/PDF |
-| `Sources/ComponentViews.swift` | Shared panel/rows/score ring/toast |
-| `Sources/CreateViews.swift` | Studio screen: preview card, type grid, export |
-| `Sources/CreateFormViews.swift` | Per-type forms + Design sheet |
-| `Sources/ScanViews.swift` | Camera (AVFoundation) + PhotosPicker + paste (CIDetector) |
-| `Sources/HistoryViews.swift` | Saved designs grid, re-edit, delete |
-| `Sources/OnboardingViews.swift` | One-screen onboarding |
-| `Tests/` | XCTest suites for both pure modules |
-| `PrivacyInfo.xcprivacy` | No tracking, no collected data, UserDefaults CA92.1 |
+## Privacy
 
-## Xcode setup (10 minutes)
+The project contains no networking code. Camera images are decoded on device
+and never leave it. The privacy manifest declares one UserDefaults reason
+(`CA92.1`).
 
-1. Xcode → **Create New Project** → iOS → **App** → SwiftUI, Swift, name `QRFlow`,
-   deployment target **iOS 26.0**.
-2. Delete the template's `ContentView.swift` and `@main` file; drag `Sources/*.swift`
-   into the app target; drag `Tests/*.swift` into the test target.
-3. Add `PrivacyInfo.xcprivacy` to the app target (Build Phases → Copy Bundle Resources).
-4. Asset catalog: create an `AccentColor` set (signature color, light/dark variants).
-5. Info settings: add `NSCameraUsageDescription` = "Scan QR codes with your camera."
-   Add `ITSAppUsesNonExemptEncryption` = NO.
-6. ⌘U — both test suites should pass. ⌘R on an iPhone simulator.
+## Known limitations
 
-## Known honest limitations (roadmap, not hidden)
+- **iOS 26.0 minimum.** No `#available` fallbacks, which narrows the audience
+  for a utility people install on whatever phone they have.
+- **The share extension is verified by compilation only.** The close button now
+  lives in the extension's own view hierarchy; dismissing it on a device has
+  not been tested.
+- **Screenshots are light appearance only.** They are captured headlessly
+  through the `-ui-*` launch hooks in `AppModel`, so regenerating them is a
+  script rather than a manual pass.
+- **Page curvature is not corrected**, only perspective.
+- **`VNDetectBarcodesRequestRevision1`** is deprecated but still used in tests:
+  newer revisions require an inference context that headless simulators cannot
+  create.
 
-- **Dot styles** (rounded/dots/classy) don't exist in `CIQRCodeGenerator` — native v1
-  renders classic square modules with full color/EC/quiet-zone control. Custom module
-  shapes need a hand-rolled matrix renderer (roadmap item, ~day of work).
-- PDF embeds a 2048px raster rather than true vector paths — indistinguishable in print,
-  but SVG-equivalent purity is a roadmap item.
-- Batch generation from the web app is not ported (mobile-first scope decision).
-- Drag-and-drop from the web scanner doesn't apply to iOS; paste + PhotosPicker cover it.
-- Verify camera + paste flows on real hardware, not only the simulator.
+## Licence
 
-## App Store checklist (when you get there)
-
-- [ ] Age rating 4+ · privacy policy URL (even with "no data collected")
-- [ ] `ITSAppUsesNonExemptEncryption = NO` — already noted above
-- [ ] Privacy manifest bundled — done (`PrivacyInfo.xcprivacy`)
-- [ ] Screenshots 6.9″ + 6.5″ · description with "no account, offline, open source"
-- [ ] Real-device pass: camera scan, paste decode, PDF export, history restore
+MIT. See [LICENSE](LICENSE).

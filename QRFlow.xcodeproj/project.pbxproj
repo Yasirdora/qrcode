@@ -382,7 +382,8 @@
 				DEVELOPMENT_TEAM = D2GL6V55S2;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Scan QR codes with your camera.";
+				INFOPLIST_KEY_CFBundleDisplayName = "Qr.Code";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scans codes with the camera. Processing happens on this device; images are never uploaded.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -408,7 +409,8 @@
 				DEVELOPMENT_TEAM = D2GL6V55S2;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Scan QR codes with your camera.";
+				INFOPLIST_KEY_CFBundleDisplayName = "Qr.Code";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scans codes with the camera. Processing happens on this device; images are never uploaded.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

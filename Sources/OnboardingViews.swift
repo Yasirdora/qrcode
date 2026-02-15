@@ -17,9 +17,10 @@ struct OnboardingView: View {
                     .frame(width: 120, height: 120)
                     .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
                     .shadow(color: Color.accentColor.opacity(0.4), radius: 24, y: 8)
+                    .accessibilityHidden(true)
 
                 VStack(spacing: 8) {
-                    Text("QRFlow Studio")
+                    Text("Qr.Code")
                         .font(.largeTitle.weight(.bold))
                     Text("Design QR codes that actually scan — private, offline, on your device.")
                         .font(.body)

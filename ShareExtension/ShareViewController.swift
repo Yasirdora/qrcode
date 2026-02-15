@@ -26,11 +26,18 @@ final class ShareViewController: UIViewController {
     // MARK: - UI
 
     private func buildUI() {
-        let close = UIBarButtonItem(systemItem: .close, primaryAction: UIAction { [weak self] _ in
-            self?.extensionContext?.cancelRequest(withError: NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError))
-        })
-        navigationItem.leftBarButtonItem = close
-        navigationItem.title = "Make QR Code"
+        // A real button in the view hierarchy, not a
+        // `navigationItem.leftBarButtonItem`. The extension is launched with
+        // `NSExtensionPrincipalClass` and no storyboard, so there is no
+        // navigation controller and no navigation bar — the item never
+        // rendered, and the sheet could not be dismissed at all.
+        let close = UIButton(type: .system)
+        close.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
+        close.tintColor = .secondaryLabel
+        close.accessibilityLabel = "Close"
+        close.addAction(UIAction { [weak self] _ in self?.cancel() }, for: .touchUpInside)
+        close.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(close)
 
         imageView.contentMode = .scaleAspectFit
         imageView.translatesAutoresizingMaskIntoConstraints = false
@@ -57,6 +64,10 @@ final class ShareViewController: UIViewController {
         view.addSubview(stack)
 
         NSLayoutConstraint.activate([
+            close.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            close.widthAnchor.constraint(equalToConstant: 44),
+            close.heightAnchor.constraint(equalToConstant: 44),
             stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             stack.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
@@ -64,6 +75,12 @@ final class ShareViewController: UIViewController {
             imageView.widthAnchor.constraint(equalToConstant: 240),
             imageView.heightAnchor.constraint(equalToConstant: 240),
         ])
+    }
+
+    private func cancel() {
+        extensionContext?.cancelRequest(
+            withError: NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError)
+        )
     }
 
     // MARK: - Extraction
@@ -114,8 +131,14 @@ final class ShareViewController: UIViewController {
     }
 
     private func shareRendered() {
+        // A file URL rather than raw Data: Data reaches Mail and Messages as an
+        // unnamed, sometimes untyped attachment, while a .png on disk keeps
+        // both its name and its type.
         guard let renderedImage, let png = renderedImage.pngData() else { return }
-        let activity = UIActivityViewController(activityItems: [png], applicationActivities: nil)
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Qr.Code-\(UUID().uuidString.prefix(8)).png")
+        try? png.write(to: url)
+        let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         activity.completionWithItemsHandler = { [weak self] _, completed, _, _ in
             guard completed, let self else { return }
             self.extensionContext?.completeRequest(returningItems: nil)

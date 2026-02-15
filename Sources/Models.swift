@@ -236,7 +236,10 @@ struct DesignOptions: Codable, Equatable {
     var ctaText = "Scan me"
     /// Center logo is stored as PNG data, embedded in history entries.
     var logoPNG: Data? = nil
-    /// Logo scale as a fraction of code edge (0.10–0.50).
+    /// Logo scale as a fraction of code edge. The design sheet caps the
+    /// slider at 0.35: the knockout box adds 14% of padding per side, so
+    /// 0.35 already destroys ~20% of the symbol's area — past the point
+    /// where even EC-H recovers it reliably.
     var logoScale = 0.28
     // MARK: Module styling (QR only — web-studio vocabulary)
     var dotType: DotType = .square

@@ -53,7 +53,9 @@ struct ShellView: View {
             }
         }
         .transition(.opacity)
-        .id(model.tab)
+        // No `.id(model.tab)`: a fresh identity on every switch reset the
+        // studio, so returning from Scan re-rendered the preview and lost
+        // scroll position and focus.
         .animation(.snappy(duration: 0.25), value: model.tab)
         // Edge-to-edge horizontal swipe switches tabs — the gesture every
         // iOS user tries before hunting for a button.
@@ -70,7 +72,10 @@ struct ShellView: View {
                     }
                 }
         )
-        .overlay(alignment: .bottom) {
+        // safeAreaInset, not overlay: the bar floats over the content, so an
+        // overlay let it sit on top of the scanability ring at the foot of the
+        // Create surface. An inset reserves the space instead.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             BottomBar(model: model)
         }
     }
@@ -125,6 +130,12 @@ private struct TabButton: View {
     let namespace: Namespace.ID
     let action: () -> Void
 
+    // Scales with the label it contains: a fixed 72×50 capsule clipped the
+    // text at the larger Dynamic Type sizes. The default still meets the
+    // 44pt minimum touch target.
+    @ScaledMetric(relativeTo: .caption2) private var width = 72
+    @ScaledMetric(relativeTo: .caption2) private var height = 50
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 2) {
@@ -132,7 +143,7 @@ private struct TabButton: View {
                 Text(title).font(.caption2)
             }
             .foregroundStyle(isSelected ? Color.accentColor : .primary)
-            .frame(width: 72, height: 50)
+            .frame(width: width, height: height)
             .contentShape(.capsule)
             .background {
                 if isSelected {

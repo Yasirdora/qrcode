@@ -189,11 +189,14 @@ enum StyledQRRenderer {
 
             if let logoData = design.logoPNG, let logo = UIImage(data: logoData) {
                 cg.interpolationQuality = .high
-                drawLogo(logo, in: cg, codeRect: codeRect, design: design)
+                QRRenderer.drawLogo(logo, in: cg, codeRect: codeRect, design: design)
             }
         }
+        // A transparent code has no background to lay the band on, so the
+        // design sheet disables the toggle in that state rather than letting
+        // it silently do nothing here.
         guard design.ctaEnabled, !design.transparentBg else { return base }
-        return addContextBand(to: base, payload: payload, design: design)
+        return QRRenderer.addContextBand(to: base, payload: payload, design: design)
     }
 
     // MARK: - Module shapes
@@ -281,52 +284,4 @@ enum StyledQRRenderer {
         }
     }
 
-    // MARK: - Shared compositing (mirrors QRRenderer's logo/band)
-
-    private static func drawLogo(_ logo: UIImage, in ctx: CGContext, codeRect: CGRect, design: DesignOptions) {
-        let side = codeRect.width * CGFloat(design.logoScale)
-        let pad = side * 0.14
-        let box = CGRect(x: codeRect.midX - side / 2 - pad, y: codeRect.midY - side / 2 - pad,
-                         width: side + 2 * pad, height: side + 2 * pad)
-        design.bgUIColor.setFill()
-        ctx.addPath(UIBezierPath(roundedRect: box, cornerRadius: box.width * 0.22).cgPath)
-        ctx.fillPath()
-        logo.draw(in: box.insetBy(dx: pad, dy: pad))
-    }
-
-    private static func addContextBand(to base: UIImage, payload: String, design: DesignOptions) -> UIImage {
-        let w = base.size.width
-        let band = (w * 0.24).rounded()
-        // scale = 1 — see QRRenderer.addContextBand; a default 3× renderer
-        // would blur the pixel-quantised modules and triple the file size.
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: w, height: base.size.height + band), format: format)
-        return renderer.image { ctx in
-            design.bgUIColor.setFill()
-            ctx.fill(CGRect(x: 0, y: 0, width: w, height: base.size.height + band))
-            base.draw(at: .zero)
-            design.fgUIColor.setFill()
-            ctx.fill(CGRect(x: 0, y: base.size.height, width: w, height: band))
-
-            let cta = design.ctaText.trimmingCharacters(in: .whitespaces).isEmpty ? "Scan me" : design.ctaText
-            let ctaFont = UIFont.systemFont(ofSize: band * 0.34, weight: .bold)
-            let ctaAttr: [NSAttributedString.Key: Any] = [.font: ctaFont, .foregroundColor: design.bgUIColor]
-            let ctaSize = (cta as NSString).size(withAttributes: ctaAttr)
-            (cta as NSString).draw(at: CGPoint(x: (w - ctaSize.width) / 2, y: base.size.height + band * 0.14),
-                                   withAttributes: ctaAttr)
-
-            let dest = QRRenderer.destinationLabel(payload: payload)
-            if !dest.isEmpty {
-                let destFont = UIFont.monospacedSystemFont(ofSize: band * 0.2, weight: .regular)
-                let destAttr: [NSAttributedString.Key: Any] = [
-                    .font: destFont,
-                    .foregroundColor: design.bgUIColor.withAlphaComponent(0.75),
-                ]
-                let destSize = (dest as NSString).size(withAttributes: destAttr)
-                (dest as NSString).draw(at: CGPoint(x: (w - destSize.width) / 2, y: base.size.height + band * 0.62),
-                                        withAttributes: destAttr)
-            }
-        }
-    }
 }

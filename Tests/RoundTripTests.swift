@@ -62,9 +62,17 @@ final class RoundTripTests: XCTestCase {
                 XCTFail("logo \(scale) did not render")
                 continue
             }
-            // Record the actual decode boundary in the test log — the
-            // occlusion thresholds in Scanability should be set from THIS.
-            print("ROUNDTRIP logoScale=\(String(format: "%.2f", scale)) decodes=\(decode(img) == payload)")
+            let decodes = decode(img) == payload
+            // Printed so the boundary stays visible in the test log …
+            print("ROUNDTRIP logoScale=\(String(format: "%.2f", scale)) decodes=\(decodes)")
+            // … and asserted where the shipping UI must hold. The design sheet
+            // caps the slider at 0.35, so everything at or below that has to
+            // scan at EC-H. That assertion is what turns the cap from a rule of
+            // thumb into a measured claim. Above the cap the curve is recorded
+            // but not required.
+            if scale <= 0.35 {
+                XCTAssertTrue(decodes, "logo at \(scale) must still decode — the slider allows it")
+            }
         }
     }
 
@@ -87,6 +95,28 @@ final class RoundTripTests: XCTestCase {
         let img = QRRenderer.image(payload: dense, design: DesignOptions())
         XCTAssertNotNil(img)
         if let img { XCTAssertEqual(decode(img), dense) }
+    }
+
+    /// Nothing else decodes a linear symbol, so until this existed no test
+    /// proved an EAN or Code 128 code actually scans — the render tests only
+    /// proved they produced an image. Bars that land on fractional pixels, or
+    /// a check digit the encoder gets wrong, fail here.
+    func testLinearSymbologiesDecodeBack() {
+        let cases: [(Symbology, String)] = [
+            (.ean13, "4006381333931"),
+            (.ean8, "96385074"),
+            (.code128, "QRCODE-2026"),
+        ]
+        for (symbology, value) in cases {
+            var d = DesignOptions()
+            d.symbology = symbology
+            d.exportSize = 1024
+            guard let img = QRRenderer.image(payload: value, design: d) else {
+                XCTFail("\(symbology.rawValue) did not render")
+                continue
+            }
+            XCTAssertEqual(decode(img), value, "\(symbology.rawValue) failed to decode")
+        }
     }
 
     /// 64×64 mid-gray square — stands in for any user logo.

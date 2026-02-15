@@ -1,0 +1,617 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000010 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040 /* AppModel.swift */; };
+		A10000000000000000000011 /* ComponentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* ComponentViews.swift */; };
+		A10000000000000000000012 /* CreateFormViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042 /* CreateFormViews.swift */; };
+		A10000000000000000000013 /* CreateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043 /* CreateViews.swift */; };
+		A10000000000000000000014 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044 /* Haptics.swift */; };
+		A10000000000000000000015 /* HistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045 /* HistoryViews.swift */; };
+		A10000000000000000000016 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000046 /* Models.swift */; };
+		A10000000000000000000017 /* OnboardingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000047 /* OnboardingViews.swift */; };
+		A10000000000000000000018 /* PayloadBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000048 /* PayloadBuilder.swift */; };
+		A10000000000000000000019 /* QRFlowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000049 /* QRFlowApp.swift */; };
+		A1000000000000000000001A /* QRRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004A /* QRRenderer.swift */; };
+		A1000000000000000000001B /* ScanViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004B /* ScanViews.swift */; };
+		A1000000000000000000001C /* Scanability.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004C /* Scanability.swift */; };
+		A1000000000000000000001D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004D /* PrivacyInfo.xcprivacy */; };
+		A1000000000000000000001E /* PayloadBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004E /* PayloadBuilderTests.swift */; };
+		A1000000000000000000001F /* ScanabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004F /* ScanabilityTests.swift */; };
+		A10000000000000000000022 /* EANEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000052 /* EANEncoder.swift */; };
+		A10000000000000000000023 /* BarcodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000053 /* BarcodeTests.swift */; };
+		A10000000000000000000024 /* StyledQRRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000054 /* StyledQRRenderer.swift */; };
+		A10000000000000000000025 /* StyledQRTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000055 /* StyledQRTests.swift */; };
+		A10000000000000000000026 /* QRFlowIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000056 /* QRFlowIntents.swift */; };
+		A10000000000000000000027 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000057 /* ShareViewController.swift */; };
+		A10000000000000000000028 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000046 /* Models.swift */; };
+		A10000000000000000000029 /* PayloadBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000048 /* PayloadBuilder.swift */; };
+		A1000000000000000000002A /* EANEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000052 /* EANEncoder.swift */; };
+		A1000000000000000000002B /* Scanability.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004C /* Scanability.swift */; };
+		A1000000000000000000002C /* QRRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004A /* QRRenderer.swift */; };
+		A1000000000000000000002D /* StyledQRRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000054 /* StyledQRRenderer.swift */; };
+		A1000000000000000000002E /* QRFlowShare.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A10000000000000000000059 /* QRFlowShare.appex */; };
+		A100000000000000000000C0 /* RoundTripTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000C1 /* RoundTripTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A10000000000000000000060 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000020;
+			remoteInfo = QRFlow;
+		};
+		A10000000000000000000062 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000030;
+			remoteInfo = QRFlowShare;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A100000000000000000000A6 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A1000000000000000000002E /* QRFlowShare.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000040 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		A10000000000000000000041 /* ComponentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000042 /* CreateFormViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateFormViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000043 /* CreateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000044 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		A10000000000000000000045 /* HistoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000046 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A10000000000000000000047 /* OnboardingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000048 /* PayloadBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayloadBuilder.swift; sourceTree = "<group>"; };
+		A10000000000000000000049 /* QRFlowApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRFlowApp.swift; sourceTree = "<group>"; };
+		A1000000000000000000004A /* QRRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRRenderer.swift; sourceTree = "<group>"; };
+		A1000000000000000000004B /* ScanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViews.swift; sourceTree = "<group>"; };
+		A1000000000000000000004C /* Scanability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanability.swift; sourceTree = "<group>"; };
+		A1000000000000000000004D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A1000000000000000000004E /* PayloadBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayloadBuilderTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000004F /* ScanabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanabilityTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000050 /* QRFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QRFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000051 /* QRFlowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QRFlowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000052 /* EANEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EANEncoder.swift; sourceTree = "<group>"; };
+		A10000000000000000000053 /* BarcodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000054 /* StyledQRRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyledQRRenderer.swift; sourceTree = "<group>"; };
+		A10000000000000000000055 /* StyledQRTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyledQRTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000056 /* QRFlowIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRFlowIntents.swift; sourceTree = "<group>"; };
+		A10000000000000000000057 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		A10000000000000000000058 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10000000000000000000059 /* QRFlowShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = QRFlowShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A100000000000000000000C1 /* RoundTripTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundTripTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A10000000000000000000070 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000071 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A100000000000000000000A4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A10000000000000000000080 = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000081 /* Sources */,
+				A10000000000000000000082 /* Tests */,
+				A10000000000000000000084 /* ShareExtension */,
+				A10000000000000000000083 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A10000000000000000000081 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000040 /* AppModel.swift */,
+				A10000000000000000000041 /* ComponentViews.swift */,
+				A10000000000000000000042 /* CreateFormViews.swift */,
+				A10000000000000000000043 /* CreateViews.swift */,
+				A10000000000000000000052 /* EANEncoder.swift */,
+				A10000000000000000000044 /* Haptics.swift */,
+				A10000000000000000000045 /* HistoryViews.swift */,
+				A10000000000000000000046 /* Models.swift */,
+				A10000000000000000000047 /* OnboardingViews.swift */,
+				A10000000000000000000048 /* PayloadBuilder.swift */,
+				A10000000000000000000056 /* QRFlowIntents.swift */,
+				A10000000000000000000049 /* QRFlowApp.swift */,
+				A1000000000000000000004A /* QRRenderer.swift */,
+				A1000000000000000000004B /* ScanViews.swift */,
+				A1000000000000000000004C /* Scanability.swift */,
+				A10000000000000000000054 /* StyledQRRenderer.swift */,
+				A1000000000000000000004D /* PrivacyInfo.xcprivacy */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000082 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000053 /* BarcodeTests.swift */,
+				A1000000000000000000004E /* PayloadBuilderTests.swift */,
+				A1000000000000000000004F /* ScanabilityTests.swift */,
+				A10000000000000000000055 /* StyledQRTests.swift */,
+				A100000000000000000000C1 /* RoundTripTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000083 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000050 /* QRFlow.app */,
+				A10000000000000000000051 /* QRFlowTests.xctest */,
+				A10000000000000000000059 /* QRFlowShare.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000084 /* ShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000057 /* ShareViewController.swift */,
+				A10000000000000000000058 /* Info.plist */,
+			);
+			path = ShareExtension;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A10000000000000000000020 /* QRFlow */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000090 /* Build configuration list for PBXNativeTarget "QRFlow" */;
+			buildPhases = (
+				A100000000000000000000A0 /* Sources */,
+				A10000000000000000000070 /* Frameworks */,
+				A100000000000000000000A1 /* Resources */,
+				A100000000000000000000A6 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10000000000000000000063 /* PBXTargetDependency */,
+			);
+			name = QRFlow;
+			productName = QRFlow;
+			productReference = A10000000000000000000050 /* QRFlow.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A10000000000000000000021 /* QRFlowTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000091 /* Build configuration list for PBXNativeTarget "QRFlowTests" */;
+			buildPhases = (
+				A100000000000000000000A2 /* Sources */,
+				A10000000000000000000071 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10000000000000000000061 /* PBXTargetDependency */,
+			);
+			name = QRFlowTests;
+			productName = QRFlowTests;
+			productReference = A10000000000000000000051 /* QRFlowTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A10000000000000000000030 /* QRFlowShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000093 /* Build configuration list for PBXNativeTarget "QRFlowShare" */;
+			buildPhases = (
+				A100000000000000000000A3 /* Sources */,
+				A100000000000000000000A4 /* Frameworks */,
+				A100000000000000000000A5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = QRFlowShare;
+			productName = QRFlowShare;
+			productReference = A10000000000000000000059 /* QRFlowShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A10000000000000000000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					A10000000000000000000020 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					A10000000000000000000021 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = A10000000000000000000020;
+					};
+					A10000000000000000000030 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = A10000000000000000000092 /* Build configuration list for PBXProject "QRFlow" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A10000000000000000000080;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A10000000000000000000083 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A10000000000000000000020 /* QRFlow */,
+				A10000000000000000000021 /* QRFlowTests */,
+				A10000000000000000000030 /* QRFlowShare */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A100000000000000000000A1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000000000000000000001D /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A100000000000000000000A5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A100000000000000000000A0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000010 /* AppModel.swift in Sources */,
+				A10000000000000000000011 /* ComponentViews.swift in Sources */,
+				A10000000000000000000012 /* CreateFormViews.swift in Sources */,
+				A10000000000000000000013 /* CreateViews.swift in Sources */,
+				A10000000000000000000022 /* EANEncoder.swift in Sources */,
+				A10000000000000000000014 /* Haptics.swift in Sources */,
+				A10000000000000000000015 /* HistoryViews.swift in Sources */,
+				A10000000000000000000016 /* Models.swift in Sources */,
+				A10000000000000000000017 /* OnboardingViews.swift in Sources */,
+				A10000000000000000000018 /* PayloadBuilder.swift in Sources */,
+				A10000000000000000000026 /* QRFlowIntents.swift in Sources */,
+				A10000000000000000000019 /* QRFlowApp.swift in Sources */,
+				A1000000000000000000001A /* QRRenderer.swift in Sources */,
+				A1000000000000000000001B /* ScanViews.swift in Sources */,
+				A1000000000000000000001C /* Scanability.swift in Sources */,
+				A10000000000000000000024 /* StyledQRRenderer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A100000000000000000000A2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000023 /* BarcodeTests.swift in Sources */,
+				A1000000000000000000001E /* PayloadBuilderTests.swift in Sources */,
+				A1000000000000000000001F /* ScanabilityTests.swift in Sources */,
+				A10000000000000000000025 /* StyledQRTests.swift in Sources */,
+				A100000000000000000000C0 /* RoundTripTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A100000000000000000000A3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000027 /* ShareViewController.swift in Sources */,
+				A10000000000000000000028 /* Models.swift in Sources */,
+				A10000000000000000000029 /* PayloadBuilder.swift in Sources */,
+				A1000000000000000000002A /* EANEncoder.swift in Sources */,
+				A1000000000000000000002B /* Scanability.swift in Sources */,
+				A1000000000000000000002C /* QRRenderer.swift in Sources */,
+				A1000000000000000000002D /* StyledQRRenderer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A10000000000000000000061 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000020 /* QRFlow */;
+			targetProxy = A10000000000000000000060 /* PBXContainerItemProxy */;
+		};
+		A10000000000000000000063 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000030 /* QRFlowShare */;
+			targetProxy = A10000000000000000000062 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A100000000000000000000B0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D2GL6V55S2;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan QR codes with your camera.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.qrflow.studio;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A100000000000000000000B1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D2GL6V55S2;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan QR codes with your camera.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.qrflow.studio;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A100000000000000000000B2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4487AHC2YM;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.qrflow.studio.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/QRFlow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/QRFlow";
+			};
+			name = Debug;
+		};
+		A100000000000000000000B3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4487AHC2YM;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.qrflow.studio.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/QRFlow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/QRFlow";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A100000000000000000000B4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A100000000000000000000B5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		A100000000000000000000B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D2GL6V55S2;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.qrflow.studio.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A100000000000000000000B7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D2GL6V55S2;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.qrflow.studio.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A10000000000000000000090 /* Build configuration list for PBXNativeTarget "QRFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000000000000000000B0 /* Debug */,
+				A100000000000000000000B1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000091 /* Build configuration list for PBXNativeTarget "QRFlowTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000000000000000000B2 /* Debug */,
+				A100000000000000000000B3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000092 /* Build configuration list for PBXProject "QRFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000000000000000000B4 /* Debug */,
+				A100000000000000000000B5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000093 /* Build configuration list for PBXNativeTarget "QRFlowShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000000000000000000B6 /* Debug */,
+				A100000000000000000000B7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A10000000000000000000000 /* Project object */;
+}

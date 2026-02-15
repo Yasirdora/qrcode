@@ -21,13 +21,19 @@ struct HistoryView: View {
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 14) {
                             ForEach(model.history) { entry in
-                                HistoryCard(entry: entry)
-                                    .onTapGesture {
-                                        Haptics.selection()
-                                        model.restore(entry)
-                                        dismiss()
-                                    }
-                                    .contextMenu {
+                                // A real Button rather than onTapGesture plus an
+                                // .isButton trait: VoiceOver announced that one
+                                // correctly, but Switch Control and Full Keyboard
+                                // Access could not activate it.
+                                Button {
+                                    Haptics.selection()
+                                    model.restore(entry)
+                                    dismiss()
+                                } label: {
+                                    HistoryCard(entry: entry)
+                                }
+                                .buttonStyle(.plain)
+                                .contextMenu {
                                         Button(role: .destructive) {
                                             model.deleteHistory(entry.id)
                                         } label: {
@@ -72,7 +78,10 @@ private struct HistoryCard: View {
                 if let thumbnail {
                     Image(uiImage: thumbnail)
                         .resizable()
-                        .interpolation(.none)
+                        // Rendered at 300px and shown at ~450px on a 3× screen,
+                        // so this is an upscale: nearest-neighbour turns every
+                        // module into a visible block of uneven size.
+                        .interpolation(.high)
                         .scaledToFit()
                         .padding(12)
                 }

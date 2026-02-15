@@ -84,7 +84,7 @@ struct CreateView: View {
             // keystroke storms from re-rendering per character.
             .task(id: model.content) { await regenerate() }
             .task(id: model.design) { await regenerate() }
-            .fileExporter(isPresented: $exporterPresented, document: exportDocument, contentType: exportType, defaultFilename: "qrflow-\(model.design.symbology.rawValue)") { result in
+            .fileExporter(isPresented: $exporterPresented, document: exportDocument, contentType: exportType, defaultFilename: "qrcode-\(model.design.symbology.rawValue)") { result in
                 switch result {
                 case .success:
                     model.saveToHistory()
@@ -103,12 +103,12 @@ struct CreateView: View {
     /// rendered by iOS 26 itself — always visible, even mid-scroll.
     private var symbologyMenu: some View {
         Menu {
-            ForEach(Symbology.allCases) { sym in
-                Button {
-                    Haptics.selection()
-                    withAnimation(.snappy(duration: 0.2)) { model.design.symbology = sym }
-                } label: {
-                    Label(sym.title, systemImage: model.design.symbology == sym ? "checkmark" : "")
+            // A Picker inside the Menu rather than Buttons carrying an empty
+            // systemImage: the empty image name logged a warning and misaligned
+            // the menu, and this way the selection checkmark comes for free.
+            Picker("Barcode type", selection: $model.design.symbology) {
+                ForEach(Symbology.allCases) { sym in
+                    Text(sym.title).tag(sym)
                 }
             }
         } label: {
@@ -183,7 +183,11 @@ struct CreateView: View {
             if let preview {
                 Image(uiImage: preview)
                     .resizable()
-                    .interpolation(.none)
+                    // Rendered at 1024px and shown at ~840px on a 3× screen:
+                    // nearest-neighbour at a non-integer ratio drops and
+                    // duplicates whole module rows, so modules look unevenly
+                    // sized on screen while the exported file stays perfect.
+                    .interpolation(.high)
                     .scaledToFit()
                     .frame(maxWidth: 280)
                     .padding(.vertical, 6)
@@ -254,25 +258,31 @@ struct CreateView: View {
     /// Scanability as ONE quiet row — grade plus a mini ring. The full
     /// checklist is disclosed on demand, never waved at the user mid-flow.
     private var scoreRow: some View {
-        HStack(spacing: 12) {
-            MiniScoreRing(score: model.report.score)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(model.report.grade)
-                    .font(.subheadline.weight(.medium))
-                Text("Scanability report")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        // A Button rather than a tap gesture with an .isButton trait. The trait
+        // made VoiceOver announce it correctly, but Switch Control and Full
+        // Keyboard Access could not activate it.
+        Button {
+            scoreSheetPresented = true
+        } label: {
+            HStack(spacing: 12) {
+                MiniScoreRing(score: model.report.score)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(model.report.grade)
+                        .font(.subheadline.weight(.medium))
+                    Text("Scanability report")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle())
-        .onTapGesture { scoreSheetPresented = true }
+        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Scanability \(model.report.score) of 100, \(model.report.grade). Opens the full report.")
-        .accessibilityAddTraits(.isButton)
     }
 
     private var scoreSheet: some View {
@@ -325,17 +335,26 @@ struct CreateView: View {
     private func export(_ type: UTType) {
         let payload = model.payload
         let design = model.design
-        let data = type == .pdf
-            ? QRRenderer.pdfData(payload: payload, design: design)
-            : QRRenderer.pngData(payload: payload, design: design)
-        guard let data else {
-            Haptics.error()
-            model.showToast("Export failed")
-            return
+        // Off the main thread. A dense styled code is ~31,000 vector subpaths
+        // and the PDF path also rasterises at 2048px; done synchronously this
+        // was a visible hang, and a watchdog kill on older hardware. The
+        // preview path already detached — this is the same discipline, with
+        // only Sendable values crossing into the detached task.
+        Task { @MainActor in
+            let data = await Task.detached(priority: .userInitiated) {
+                type == .pdf
+                    ? QRRenderer.pdfData(payload: payload, design: design)
+                    : QRRenderer.pngData(payload: payload, design: design)
+            }.value
+            guard let data else {
+                Haptics.error()
+                model.showToast("Export failed")
+                return
+            }
+            exportType = type
+            exportDocument = QRDocument(data: data)
+            exporterPresented = true
         }
-        exportType = type
-        exportDocument = QRDocument(data: data)
-        exporterPresented = true
     }
 }
 

@@ -51,7 +51,8 @@ struct PanelRow: View {
     }
 }
 
-/// Global toast — announced to VoiceOver, auto-dismissed by AppModel.
+/// Global toast. The VoiceOver announcement is posted by `AppModel.showToast`,
+/// so the same message spoken twice is still spoken the second time.
 struct ToastView: View {
     let message: String
 

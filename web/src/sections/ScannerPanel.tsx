@@ -13,7 +13,6 @@ export default function ScannerPanel() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const rafRef = useRef<number>(0)
   const fileRef = useRef<HTMLInputElement>(null)
   const [cameraOn, setCameraOn] = useState(false)
   const [result, setResult] = useState<ScanResult | null>(null)
@@ -21,7 +20,6 @@ export default function ScannerPanel() {
   const lastSeenRef = useRef<string>('')
 
   const stopCamera = useCallback(() => {
-    cancelAnimationFrame(rafRef.current)
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     setCameraOn(false)
@@ -29,27 +27,37 @@ export default function ScannerPanel() {
 
   useEffect(() => stopCamera, [stopCamera])
 
-  const tick = useCallback(() => {
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
-      rafRef.current = requestAnimationFrame(tick)
-      return
+  // The decode loop runs in an effect rather than in the render body: it
+  // schedules itself through requestAnimationFrame and reads the clock, and
+  // neither belongs to a render. The effect owns the frame handle, so stopping
+  // the camera is only a matter of flipping `cameraOn`.
+  useEffect(() => {
+    if (!cameraOn) return
+    let frame = 0
+    function tick() {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        frame = requestAnimationFrame(tick)
+        return
+      }
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (!ctx) return
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      ctx.drawImage(video, 0, 0)
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' })
+      if (code?.data && code.data !== lastSeenRef.current) {
+        lastSeenRef.current = code.data
+        setResult({ text: code.data, at: Date.now() })
+        toast.success('QR code decoded')
+      }
+      frame = requestAnimationFrame(tick)
     }
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })
-    if (!ctx) return
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    ctx.drawImage(video, 0, 0)
-    const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' })
-    if (code?.data && code.data !== lastSeenRef.current) {
-      lastSeenRef.current = code.data
-      setResult({ text: code.data, at: Date.now() })
-      toast.success('QR code decoded')
-    }
-    rafRef.current = requestAnimationFrame(tick)
-  }, [])
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [cameraOn])
 
   const startCamera = async () => {
     try {
@@ -61,8 +69,8 @@ export default function ScannerPanel() {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
       }
+      // Decoding starts as soon as this flips; the effect above owns the loop.
       setCameraOn(true)
-      rafRef.current = requestAnimationFrame(tick)
     } catch {
       toast.error('Camera unavailable — check permissions, or decode an image instead.')
     }
@@ -103,7 +111,6 @@ export default function ScannerPanel() {
     }
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const onDrop = (e: React.DragEvent) => {

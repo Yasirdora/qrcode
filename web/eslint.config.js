@@ -20,4 +20,15 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Vendored shadcn/ui primitives. Several export a constant beside their
+    // component (buttonVariants, badgeVariants, …), which the fast-refresh rule
+    // reports as an error. Splitting generated files to satisfy a dev-server
+    // rule would make updating them harder, so the rule is off for this folder
+    // only — it applies to nothing hand-written.
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

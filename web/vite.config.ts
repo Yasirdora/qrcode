@@ -1,22 +1,20 @@
 import path from "path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
-import { inspectAttr } from 'kimi-plugin-inspect-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
   plugins: [
-    inspectAttr(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'QRFlow Studio',
-        short_name: 'QRFlow',
-        description: 'Privacy-first, offline QR code design studio with scanability scoring and bulk generation.',
+        name: 'Qr.Code',
+        short_name: 'Qr.Code',
+        description: 'Offline QR code design studio with live scanability scoring, styling and bulk generation.',
         theme_color: '#fafafa',
         background_color: '#fafafa',
         display: 'standalone',

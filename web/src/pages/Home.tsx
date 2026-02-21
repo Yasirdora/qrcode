@@ -41,14 +41,15 @@ type Ext = 'png' | 'svg' | 'jpeg' | 'webp'
 export default function Home() {
   const [content, setContent] = useState<ContentState>(DEFAULT_CONTENT)
   const [design, setDesign] = useState<DesignOptions>(DEFAULT_DESIGN)
-  const [history, setHistory] = useState<HistoryEntry[]>([])
+  // Restored lazily rather than in an effect: setting state synchronously inside
+  // an effect triggers a second render pass on every mount for no reason.
+  const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory())
   const [tab, setTab] = useState('create')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [installEvt, setInstallEvt] = useState<Event | null>(null)
   const isMobile = useIsMobile()
 
   useEffect(() => {
-    setHistory(loadHistory())
     const onPrompt = (e: Event) => {
       e.preventDefault()
       setInstallEvt(e)
@@ -154,7 +155,7 @@ export default function Home() {
             <QrCode className="h-5 w-5 text-background" />
           </div>
           <div>
-            <h1 className="text-sm font-bold leading-tight">QRFlow Studio</h1>
+            <h1 className="text-sm font-bold leading-tight">Qr.Code</h1>
             <p className="text-[11px] text-muted-foreground leading-tight">
               Privacy-first QR design studio — 100% offline, zero tracking
             </p>
@@ -289,7 +290,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        QRFlow Studio — every byte stays in your browser. Built with React, TypeScript, qr-code-styling
+        Qr.Code — every byte stays in your browser. Built with React, TypeScript, qr-code-styling
         and jsQR. Open source on GitHub.
       </footer>
     </div>

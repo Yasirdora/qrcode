@@ -13,8 +13,15 @@
 
 # Qr.Code
 
-An iOS app for generating and scanning QR codes and barcodes. It runs entirely
-on the device: no account, no network requests, no third-party dependencies.
+A QR code design studio in two implementations, sharing a payload vocabulary, a
+scanability model and a design language.
+
+- **iOS app** — `Sources/`, `Tests/`, `ShareExtension/`. Swift 6, SwiftUI and
+  Vision; generates and scans QR, Aztec, PDF417, Code 128, EAN-13 and EAN-8.
+- **Web studio** — `web/`. React 19, TypeScript and Vite; adds SVG export and
+  bulk CSV generation. This is the app the iOS edition is a port of.
+
+Both are offline-first: nothing you type, scan or generate leaves the device.
 
 ## Scanability
 
@@ -85,6 +92,9 @@ xcodebuild -project QRFlow.xcodeproj -scheme QRFlow \
 
 Replace the destination with an installed simulator (`xcrun simctl list devices
 available`). 64 tests, all passing.
+
+The web studio carries its own suite: `cd web && npm run verify` runs the
+linter, 17 tests and a production build.
 
 | Area | Coverage |
 | --- | --- |

@@ -1,4 +1,5 @@
 import type { ContentState } from '@/types/qr'
+import { isValidBitcoinAddress } from './bitcoin'
 
 function escapeWifi(s: string): string {
   return s.replace(/([\\;,:"'])/g, '\\$1')
@@ -42,11 +43,15 @@ export function buildPayload(c: ContentState): string {
       ]
       if (v.org) lines.push(`ORG:${escapeVCard(v.org)}`)
       if (v.title) lines.push(`TITLE:${escapeVCard(v.title)}`)
-      if (v.phone) lines.push(`TEL;TYPE=CELL:${v.phone}`)
-      if (v.email) lines.push(`EMAIL:${v.email}`)
-      if (v.url) lines.push(`URL:${v.url}`)
+      // Every value is escaped, not only the name fields: a phone extension or
+      // a URL with a query string contains the separators that delimit vCard
+      // fields, so an unescaped one truncates the record.
+      if (v.phone) lines.push(`TEL;TYPE=CELL:${escapeVCard(v.phone)}`)
+      if (v.email) lines.push(`EMAIL:${escapeVCard(v.email)}`)
+      if (v.url) lines.push(`URL:${escapeVCard(v.url)}`)
       lines.push('END:VCARD')
-      return lines.join('\n')
+      // vCard 3.0 mandates CRLF; strict parsers reject LF-only records.
+      return lines.join('\r\n')
     }
     case 'sms': {
       if (!c.smsNumber) return ''
@@ -61,16 +66,36 @@ export function buildPayload(c: ContentState): string {
     case 'event': {
       const e = c.event
       if (!e.title || !e.start) return ''
-      const lines = ['BEGIN:VEVENT', `SUMMARY:${escapeVCard(e.title)}`, `DTSTART:${toUtcStamp(e.start)}`]
+      // Wrapped in VCALENDAR with a UID and a DTSTAMP: several calendar clients
+      // refuse a bare VEVENT. Both values are derived from the event, because
+      // the payload is rebuilt on every render and a random UID would change
+      // the encoded code between two exports.
+      const lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Qr.Code//EN',
+        'BEGIN:VEVENT',
+        `UID:${e.start.replace(/\D/g, '')}-${e.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24)}@qr.code`,
+        `DTSTAMP:${toUtcStamp(e.start)}`,
+        `SUMMARY:${escapeVCard(e.title)}`,
+        `DTSTART:${toUtcStamp(e.start)}`,
+      ]
       if (e.end) lines.push(`DTEND:${toUtcStamp(e.end)}`)
       if (e.location) lines.push(`LOCATION:${escapeVCard(e.location)}`)
       if (e.description) lines.push(`DESCRIPTION:${escapeVCard(e.description)}`)
       lines.push('END:VEVENT')
-      return lines.join('\n')
+      lines.push('END:VCALENDAR')
+      // iCalendar requires CRLF as well.
+      return lines.join('\r\n')
     }
     case 'crypto': {
-      if (!c.cryptoAddress) return ''
-      return `bitcoin:${c.cryptoAddress}${c.cryptoAmount ? `?amount=${c.cryptoAmount}` : ''}`
+      const address = c.cryptoAddress.trim()
+      // A mistyped address is not recoverable, and the code is printed before
+      // anyone can check it. Refuse to encode an address whose checksum does
+      // not verify; an empty payload shows the "add content" state instead of
+      // a code that sends funds nowhere.
+      if (!isValidBitcoinAddress(address)) return ''
+      return `bitcoin:${address}${c.cryptoAmount ? `?amount=${c.cryptoAmount}` : ''}`
     }
     case 'whatsapp': {
       const digits = c.whatsappNumber.replace(/[^\d]/g, '')

@@ -58,6 +58,21 @@ enum PayloadBuilder {
             // vCard 3.0 mandates CRLF; strict parsers reject LF-only records.
             return lines.joined(separator: "\r\n")
 
+        case .email:
+            let to = c.emailTo.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !to.isEmpty else { return "" }
+            // URLComponents rather than string concatenation: a subject line
+            // containing & or = would otherwise be split into extra query
+            // parameters.
+            var components = URLComponents()
+            components.scheme = "mailto"
+            components.path = to
+            var items: [URLQueryItem] = []
+            if !c.emailSubject.isEmpty { items.append(URLQueryItem(name: "subject", value: c.emailSubject)) }
+            if !c.emailBody.isEmpty { items.append(URLQueryItem(name: "body", value: c.emailBody)) }
+            components.queryItems = items.isEmpty ? nil : items
+            return components.string ?? "mailto:\(to)"
+
         case .sms:
             guard !c.smsNumber.isEmpty else { return "" }
             var out = "sms:\(c.smsNumber)"
@@ -137,6 +152,8 @@ enum PayloadBuilder {
         case .vcard:
             let name = "\(c.vcard.firstName) \(c.vcard.lastName)".trimmingCharacters(in: .whitespaces)
             return name.isEmpty ? "Contact card" : "Contact · \(name)"
+        case .email:
+            return c.emailTo.isEmpty ? "Email" : "Email · \(c.emailTo)"
         case .sms:
             return c.smsNumber.isEmpty ? "Text message" : "SMS · \(c.smsNumber)"
         case .phone:

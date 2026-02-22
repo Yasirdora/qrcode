@@ -3,7 +3,7 @@ import Foundation
 /// Every payload family the app can encode. Mirrors the web studio 1:1 so a
 /// user moving between the two finds the same vocabulary.
 enum ContentType: String, Codable, CaseIterable, Identifiable {
-    case url, text, wifi, vcard, sms, phone, geo, event, crypto, whatsapp, custom
+    case url, text, wifi, vcard, email, sms, phone, geo, event, crypto, whatsapp, custom
 
     var id: String { rawValue }
 
@@ -13,6 +13,7 @@ enum ContentType: String, Codable, CaseIterable, Identifiable {
         case .text: "Text"
         case .wifi: "Wi-Fi"
         case .vcard: "vCard"
+        case .email: "Email"
         case .sms: "SMS"
         case .phone: "Phone"
         case .geo: "Geo"
@@ -29,6 +30,7 @@ enum ContentType: String, Codable, CaseIterable, Identifiable {
         case .text: "text.alignleft"
         case .wifi: "wifi"
         case .vcard: "person.crop.rectangle"
+        case .email: "envelope"
         case .sms: "message"
         case .phone: "phone"
         case .geo: "mappin"
@@ -111,6 +113,9 @@ struct ContentState: Codable, Equatable {
     var text = ""
     var wifi = WiFiFields()
     var vcard = VCardFields()
+    var emailTo = ""
+    var emailSubject = ""
+    var emailBody = ""
     var smsNumber = ""
     var smsMessage = ""
     var phoneNumber = ""
@@ -135,6 +140,9 @@ struct ContentState: Codable, Equatable {
         text = try c.decodeIfPresent(String.self, forKey: .text) ?? ""
         wifi = try c.decodeIfPresent(WiFiFields.self, forKey: .wifi) ?? WiFiFields()
         vcard = try c.decodeIfPresent(VCardFields.self, forKey: .vcard) ?? VCardFields()
+        emailTo = try c.decodeIfPresent(String.self, forKey: .emailTo) ?? ""
+        emailSubject = try c.decodeIfPresent(String.self, forKey: .emailSubject) ?? ""
+        emailBody = try c.decodeIfPresent(String.self, forKey: .emailBody) ?? ""
         smsNumber = try c.decodeIfPresent(String.self, forKey: .smsNumber) ?? ""
         smsMessage = try c.decodeIfPresent(String.self, forKey: .smsMessage) ?? ""
         phoneNumber = try c.decodeIfPresent(String.self, forKey: .phoneNumber) ?? ""

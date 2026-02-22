@@ -100,6 +100,18 @@ struct ContentForm: View {
             LabeledField("Company") { TextField("Company", text: $content.vcard.org) }
             LabeledField("Job title") { TextField("Title", text: $content.vcard.title) }
             LabeledField("Website") { TextField("https://…", text: $content.vcard.url).keyboardType(.URL).textInputAutocapitalization(.never) }
+        case .email:
+            LabeledField("To") {
+                TextField("ada@example.com", text: $content.emailTo)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            }
+            LabeledField("Subject") { TextField("Subject", text: $content.emailSubject) }
+            LabeledField("Message") {
+                TextField("Body", text: $content.emailBody, axis: .vertical)
+                    .lineLimit(3...6)
+            }
         case .sms:
             LabeledField("Phone number") { TextField("+1 555 123 4567", text: $content.smsNumber).keyboardType(.phonePad) }
             LabeledField("Message") { TextField("Pre-filled message", text: $content.smsMessage, axis: .vertical).lineLimit(2...4) }

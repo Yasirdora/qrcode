@@ -37,8 +37,8 @@ change that breaks scannability fails the build.
 
 ## Features
 
-**Payload types (11)** — URL, text, Wi-Fi credentials, contact card, SMS,
-phone, geo, calendar event, Bitcoin payment, WhatsApp, and a raw mode for
+**Payload types (12)** — URL, text, Wi-Fi credentials, contact card, email,
+SMS, phone, geo, calendar event, Bitcoin payment, WhatsApp, and a raw mode for
 anything a scanner understands (SEPA/EPC transfers, deep links, proprietary
 schemes).
 

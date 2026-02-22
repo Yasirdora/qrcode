@@ -38,8 +38,8 @@ struct OnboardingView: View {
                     )
                     Divider().padding(.leading, 56)
                     FeatureRow(
-                        title: "11 content types",
-                        subtitle: "Wi-Fi, contacts, events, WhatsApp — plus raw custom payloads.",
+                        title: "12 content types",
+                        subtitle: "Wi-Fi, contacts, events, email, WhatsApp — plus raw custom payloads.",
                         systemImage: "square.grid.3x3",
                         tint: .accentColor
                     )

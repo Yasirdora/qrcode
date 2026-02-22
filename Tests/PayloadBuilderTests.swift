@@ -148,6 +148,27 @@ final class PayloadBuilderTests: XCTestCase {
         }
     }
 
+    func testEmailEncodesAMailtoWithEncodedQueryValues() {
+        var c = ContentState()
+        c.type = .email
+        c.emailTo = "ada@example.com"
+        // A subject containing & would split into a second query parameter if
+        // the value were interpolated into the URL by hand.
+        c.emailSubject = "Invoice & receipt"
+        c.emailBody = "Line one\nLine two"
+        XCTAssertEqual(
+            PayloadBuilder.payload(for: c),
+            "mailto:ada@example.com?subject=Invoice%20%26%20receipt&body=Line%20one%0ALine%20two"
+        )
+    }
+
+    func testEmailWithoutARecipientEncodesNothing() {
+        var c = ContentState()
+        c.type = .email
+        c.emailSubject = "Orphaned subject"
+        XCTAssertEqual(PayloadBuilder.payload(for: c), "")
+    }
+
     func testVCardJoinsWithCRLFAndEscapesEveryValue() {
         var c = ContentState()
         c.type = .vcard

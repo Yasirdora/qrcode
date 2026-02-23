@@ -50,7 +50,8 @@ circular finder frames; gradients; transparent backgrounds; centre logos; a
 theme gallery. Styled output is drawn as vector paths from the symbol matrix,
 so it stays sharp at any export size.
 
-**Export** — PNG up to 4096 px, and a print-sized PDF rasterised at 2048 px.
+**Export** — SVG for print (QR codes), PNG up to 4096 px, and a print-sized PDF
+rasterised at 2048 px.
 
 **Context Band** — an optional strip below the code showing a call to action
 and the destination, so a scan target is visible before scanning. The label is
@@ -91,7 +92,7 @@ xcodebuild -project QRFlow.xcodeproj -scheme QRFlow \
 ```
 
 Replace the destination with an installed simulator (`xcrun simctl list devices
-available`). 64 tests, all passing.
+available`). 69 tests, all passing.
 
 The web studio carries its own suite: `cd web && npm run verify` runs the
 linter, 17 tests and a production build.

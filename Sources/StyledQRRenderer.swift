@@ -111,7 +111,20 @@ enum StyledQRRenderer {
 
     // MARK: - Rendering
 
-    static func image(payload: String, design: DesignOptions) -> UIImage? {
+    /// The module geometry for a design: one path holding every dark module and
+    /// the three eyes, in the design's own pixel space.
+    ///
+    /// Shared by the raster renderer and the SVG exporter, so both describe the
+    /// same symbol — including the styled shapes, which is why the vector export
+    /// serialises this path instead of walking the raw matrix again.
+    struct Geometry {
+        let path: CGPath
+        let codeRect: CGRect
+        let modulePx: CGFloat
+        let gridSize: Int
+    }
+
+    static func geometry(payload: String, design: DesignOptions) -> Geometry? {
         guard let (grid, n) = matrix(payload: payload, ec: design.errorLevel) else { return nil }
         let size = CGFloat(design.exportSize)
         let modulePx = (size / CGFloat(n + 2 * design.quietModules)).rounded(.down)
@@ -155,6 +168,13 @@ enum StyledQRRenderer {
             addEye(to: path, origin: cellRect(f.row, f.col).origin, modulePx: modulePx, design: design)
         }
 
+        return Geometry(path: path, codeRect: codeRect, modulePx: modulePx, gridSize: n)
+    }
+
+    static func image(payload: String, design: DesignOptions) -> UIImage? {
+        guard let geometry = geometry(payload: payload, design: design) else { return nil }
+        let size = CGFloat(design.exportSize)
+
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format)
@@ -164,7 +184,7 @@ enum StyledQRRenderer {
                 design.bgUIColor.setFill()
                 cg.fill(CGRect(x: 0, y: 0, width: size, height: size))
             }
-            cg.addPath(path)
+            cg.addPath(geometry.path)
             // Even-odd: the eye frames are rings (outer minus inner), and
             // tiled data modules never overlap, so one rule serves both.
             cg.clip(using: .evenOdd)
@@ -172,10 +192,11 @@ enum StyledQRRenderer {
                 let colors = [design.fgUIColor.cgColor, UIColor(hex: design.gradientColor2Hex).cgColor] as CFArray
                 if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1]) {
                     let angle = design.gradientRotation * .pi / 180
-                    let start = CGPoint(x: codeRect.midX - cos(angle) * codeRect.width / 2,
-                                        y: codeRect.midY - sin(angle) * codeRect.height / 2)
-                    let end = CGPoint(x: codeRect.midX + cos(angle) * codeRect.width / 2,
-                                      y: codeRect.midY + sin(angle) * codeRect.height / 2)
+                    let rect = geometry.codeRect
+                    let start = CGPoint(x: rect.midX - cos(angle) * rect.width / 2,
+                                        y: rect.midY - sin(angle) * rect.height / 2)
+                    let end = CGPoint(x: rect.midX + cos(angle) * rect.width / 2,
+                                      y: rect.midY + sin(angle) * rect.height / 2)
                     // Extend both ends: without this, the anti-diagonal corners
                     // (past the gradient line) get NO paint — the "teardrop" bug.
                     cg.drawLinearGradient(gradient, start: start, end: end,
@@ -183,13 +204,13 @@ enum StyledQRRenderer {
                 }
             } else {
                 design.fgUIColor.setFill()
-                cg.fill(codeRect)
+                cg.fill(geometry.codeRect)
             }
             cg.resetClip()
 
             if let logoData = design.logoPNG, let logo = UIImage(data: logoData) {
                 cg.interpolationQuality = .high
-                QRRenderer.drawLogo(logo, in: cg, codeRect: codeRect, design: design)
+                QRRenderer.drawLogo(logo, in: cg, codeRect: geometry.codeRect, design: design)
             }
         }
         // A transparent code has no background to lay the band on, so the

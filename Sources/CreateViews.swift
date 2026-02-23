@@ -141,6 +141,14 @@ struct CreateView: View {
                 Button { export(.pdf) } label: {
                     Label("Save PDF for Print", systemImage: "printer")
                 }
+                // Vector output is QR-only: the other symbologies are CoreImage
+                // bitmaps with no module geometry to serialise, so the option
+                // is hidden rather than offered and then refused.
+                if model.design.symbology == .qr {
+                    Button { export(.svg) } label: {
+                        Label("Save SVG for Print", systemImage: "scribble.variable")
+                    }
+                }
             }
         } label: {
             Image(systemName: "square.and.arrow.up")
@@ -342,9 +350,11 @@ struct CreateView: View {
         // only Sendable values crossing into the detached task.
         Task { @MainActor in
             let data = await Task.detached(priority: .userInitiated) {
-                type == .pdf
-                    ? QRRenderer.pdfData(payload: payload, design: design)
-                    : QRRenderer.pngData(payload: payload, design: design)
+                switch type {
+                case .pdf: QRRenderer.pdfData(payload: payload, design: design)
+                case .svg: QRRenderer.svg(payload: payload, design: design)?.data(using: .utf8)
+                default: QRRenderer.pngData(payload: payload, design: design)
+                }
             }.value
             guard let data else {
                 Haptics.error()
@@ -360,7 +370,7 @@ struct CreateView: View {
 
 /// File-export wrapper for the system document picker.
 struct QRDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.png, .pdf] }
+    static var readableContentTypes: [UTType] { [.png, .pdf, .svg] }
     var data: Data
 
     init(data: Data) { self.data = data }

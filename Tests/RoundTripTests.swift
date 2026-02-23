@@ -119,6 +119,71 @@ final class RoundTripTests: XCTestCase {
         }
     }
 
+    // MARK: - SVG export
+
+    /// The vector export has to describe the same symbol as the raster one:
+    /// every dark module outside the finder patterns becomes one subpath, and
+    /// each eye adds its ring and its centre dot.
+    func testSVGSubpathCountMatchesTheMatrix() {
+        var design = DesignOptions()
+        design.dotType = .square
+        guard let svg = QRRenderer.svg(payload: payload, design: design),
+              let (grid, n) = StyledQRRenderer.matrix(payload: payload, ec: design.errorLevel),
+              let dStart = svg.range(of: "<path d=\""),
+              let dEnd = svg.range(of: "\" fill=", range: dStart.upperBound..<svg.endIndex) else {
+            return XCTFail("no SVG path produced")
+        }
+        // Well-formed XML, not merely a string that starts with <svg.
+        XCTAssertTrue(XMLParser(data: Data(svg.utf8)).parse(), "the SVG is not well-formed")
+
+        let finders = StyledQRRenderer.finderBlocks(grid: grid, n: n)
+        func insideFinder(_ r: Int, _ c: Int) -> Bool {
+            finders.contains { r >= $0.row && r < $0.row + 7 && c >= $0.col && c < $0.col + 7 }
+        }
+        var expected = 0
+        for r in 0..<n {
+            for c in 0..<n where grid[r * n + c] && !insideFinder(r, c) { expected += 1 }
+        }
+        expected += finders.count * 3 // ring outer, ring inner, centre dot
+
+        let subpaths = svg[dStart.upperBound..<dEnd.lowerBound].filter { $0 == "M" }.count
+        XCTAssertEqual(subpaths, expected, "one subpath per module and per eye shape")
+    }
+
+    /// Gradient, Context Band and text escaping all have to survive the trip
+    /// into vector output.
+    func testSVGCarriesTheGradientAndTheContextBand() {
+        var design = DesignOptions()
+        design.exportSize = 512
+        design.gradientEnabled = true
+        design.gradientColor2Hex = "#0369A1"
+        design.ctaEnabled = true
+        design.ctaText = "Scan <me> & enjoy"
+        guard let svg = QRRenderer.svg(payload: payload, design: design) else {
+            return XCTFail("no SVG produced")
+        }
+        XCTAssertTrue(svg.contains("<linearGradient"), "a gradient design must define one")
+        XCTAssertTrue(svg.contains("fill=\"url(#modules)\""), "the modules must reference it")
+        XCTAssertTrue(svg.contains("stop-color=\"#0369A1\""), "the gradient end colour must appear")
+        // 512 × 0.24 rounded = 123pt of band, so the canvas grows to 635.
+        XCTAssertTrue(svg.contains("height=\"635\""), "the band adds height to the canvas")
+        XCTAssertTrue(svg.contains("Scan &lt;me&gt; &amp; enjoy"), "band text must be XML-escaped")
+    }
+
+    func testSVGOmitsTheBackgroundWhenTransparentAndRefusesLinearCodes() {
+        var transparent = DesignOptions()
+        transparent.transparentBg = true
+        guard let svg = QRRenderer.svg(payload: payload, design: transparent) else {
+            return XCTFail("no SVG produced")
+        }
+        XCTAssertFalse(svg.contains("<rect width="), "a transparent design ships no background")
+
+        var ean = DesignOptions()
+        ean.symbology = .ean13
+        XCTAssertNil(QRRenderer.svg(payload: "4006381333931", design: ean),
+                     "a linear code has no module geometry to serialise")
+    }
+
     /// 64×64 mid-gray square — stands in for any user logo.
     private static let solidLogo: Data = {
         let r = UIGraphicsImageRenderer(size: CGSize(width: 64, height: 64))

@@ -339,6 +339,116 @@ enum QRRenderer {
             }
         }
     }
+
+    // MARK: - SVG
+
+    /// Vector export for QR codes, serialised from the same module path the
+    /// raster renderer fills — so the two describe the same symbol, styled
+    /// shapes included.
+    ///
+    /// Linear and stacked symbologies are raster-only: they come from CoreImage
+    /// bitmaps with no module geometry to serialise, so this returns nil for
+    /// them rather than emitting an approximation.
+    static func svg(payload: String, design: DesignOptions) -> String? {
+        guard design.symbology == .qr,
+              let geometry = StyledQRRenderer.geometry(payload: payload, design: design) else { return nil }
+
+        let size = CGFloat(design.exportSize)
+        let band = design.ctaEnabled && !design.transparentBg ? (size * 0.24).rounded() : 0
+        let height = size + band
+
+        var out = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <svg xmlns="http://www.w3.org/2000/svg" width="\(number(size))" height="\(number(height))" viewBox="0 0 \(number(size)) \(number(height))">
+
+        """
+        if design.gradientEnabled {
+            let angle = design.gradientRotation * .pi / 180
+            out += """
+              <defs>
+                <linearGradient id="modules" x1="\(number(0.5 - cos(angle) / 2))" y1="\(number(0.5 - sin(angle) / 2))" x2="\(number(0.5 + cos(angle) / 2))" y2="\(number(0.5 + sin(angle) / 2))">
+                  <stop offset="0" stop-color="\(design.fgHex)"/>
+                  <stop offset="1" stop-color="\(design.gradientColor2Hex)"/>
+                </linearGradient>
+              </defs>
+
+            """
+        }
+        if !design.transparentBg {
+            out += "  <rect width=\"\(number(size))\" height=\"\(number(height))\" fill=\"\(design.bgHex)\"/>\n"
+        }
+        let fill = design.gradientEnabled ? "url(#modules)" : design.fgHex
+        out += "  <path d=\"\(svgPathData(geometry.path))\" fill=\"\(fill)\" fill-rule=\"evenodd\"/>\n"
+
+        if let logoData = design.logoPNG {
+            // Same knockout box as the raster renderer: the logo covers the
+            // modules behind it, padded so nothing touches the edge.
+            let side = geometry.codeRect.width * CGFloat(design.logoScale)
+            let pad = side * 0.14
+            let box = CGRect(x: geometry.codeRect.midX - side / 2 - pad,
+                             y: geometry.codeRect.midY - side / 2 - pad,
+                             width: side + 2 * pad, height: side + 2 * pad)
+            out += "  <rect x=\"\(number(box.minX))\" y=\"\(number(box.minY))\" width=\"\(number(box.width))\" height=\"\(number(box.height))\" rx=\"\(number(box.width * 0.22))\" fill=\"\(design.bgHex)\"/>\n"
+            out += "  <image x=\"\(number(box.minX + pad))\" y=\"\(number(box.minY + pad))\" width=\"\(number(side))\" height=\"\(number(side))\" href=\"data:image/png;base64,\(logoData.base64EncodedString())\"/>\n"
+        }
+
+        if band > 0 {
+            // y is a text BASELINE in SVG and the top edge in CoreGraphics, so
+            // these offsets sit the text by eye rather than by shared maths.
+            let cta = design.ctaText.trimmingCharacters(in: .whitespaces).isEmpty ? "Scan me" : design.ctaText
+            let dest = destinationLabel(payload: payload)
+            out += "  <g font-family=\"-apple-system, Helvetica, Arial, sans-serif\">\n"
+            out += "    <rect y=\"\(number(size))\" width=\"\(number(size))\" height=\"\(number(band))\" fill=\"\(design.fgHex)\"/>\n"
+            out += "    <text x=\"\(number(size / 2))\" y=\"\(number(size + band * 0.42))\" font-size=\"\(number(band * 0.34))\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"\(design.bgHex)\">\(xmlEscaped(cta))</text>\n"
+            if !dest.isEmpty {
+                out += "    <text x=\"\(number(size / 2))\" y=\"\(number(size + band * 0.82))\" font-size=\"\(number(band * 0.2))\" font-family=\"ui-monospace, Menlo, monospace\" text-anchor=\"middle\" fill=\"\(design.bgHex)\" fill-opacity=\"0.75\">\(xmlEscaped(dest))</text>\n"
+            }
+            out += "  </g>\n"
+        }
+
+        out += "</svg>\n"
+        return out
+    }
+
+    /// Serialises a CGPath to SVG path data. `applyWithBlock` reports the path
+    /// as it was built, curves included, so no geometry is approximated here.
+    private static func svgPathData(_ path: CGPath) -> String {
+        var data = ""
+        path.applyWithBlock { element in
+            let points = element.pointee.points
+            switch element.pointee.type {
+            case .moveToPoint:
+                data += "M\(number(points[0].x)) \(number(points[0].y))"
+            case .addLineToPoint:
+                data += "L\(number(points[0].x)) \(number(points[0].y))"
+            case .addQuadCurveToPoint:
+                data += "Q\(number(points[0].x)) \(number(points[0].y)) \(number(points[1].x)) \(number(points[1].y))"
+            case .addCurveToPoint:
+                data += "C\(number(points[0].x)) \(number(points[0].y)) \(number(points[1].x)) \(number(points[1].y)) \(number(points[2].x)) \(number(points[2].y))"
+            case .closeSubpath:
+                data += "Z"
+            @unknown default:
+                break
+            }
+        }
+        return data
+    }
+
+    /// Two decimals at most, without trailing zeros: SVG files stay readable and
+    /// the numbers stay short.
+    private static func number(_ value: CGFloat) -> String {
+        let rounded = (value * 100).rounded() / 100
+        if rounded == rounded.rounded() { return String(Int(rounded)) }
+        return String(format: "%.2f", rounded)
+    }
+
+    private static func xmlEscaped(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&apos;")
+    }
 }
 
 extension DesignOptions {

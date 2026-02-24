@@ -242,6 +242,30 @@ enum Scanability {
                 detail: "Dot modules shed ~21% of the ink area — modern phones cope, budget scanners may not.\(eyeNote)",
                 weight: 15
             )
+        case .extraRounded:
+            return Check(
+                id: "style",
+                label: "Module styling",
+                status: .pass,
+                detail: "Smooth modules round only the corners that face empty space, so runs keep their edges.\(eyeNote)",
+                weight: 15
+            )
+        case .classy:
+            return Check(
+                id: "style",
+                label: "Module styling",
+                status: .pass,
+                detail: "Classy modules stay square wherever a neighbor touches them and round only at the ends of a run.\(eyeNote)",
+                weight: 15
+            )
+        case .classyRounded:
+            return Check(
+                id: "style",
+                label: "Module styling",
+                status: .warn,
+                detail: "Leaf modules round their free corners at the full module width, which costs more ink at the end of every run than rounded does.\(eyeNote)",
+                weight: 15
+            )
         }
     }
 

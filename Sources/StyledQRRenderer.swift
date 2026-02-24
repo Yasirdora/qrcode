@@ -149,17 +149,10 @@ enum StyledQRRenderer {
         // 1. Data/timing modules in the chosen dot style.
         for r in 0..<n {
             for c in 0..<n where grid[r * n + c] && !insideFinder(r, c) {
-                if design.dotType == .fluid {
-                    // Fluid modules are neighbor-aware: a corner only rounds
-                    // when it faces empty space; corners between dark
-                    // neighbors stay square so runs merge into one shape.
-                    addFluidModule(to: path, rect: cellRect(r, c)) { dr, dc in
-                        let rr = r + dr, cc = c + dc
-                        guard rr >= 0, rr < n, cc >= 0, cc < n else { return false }
-                        return grid[rr * n + cc] && !insideFinder(rr, cc)
-                    }
-                } else {
-                    addModule(to: path, rect: cellRect(r, c), style: design.dotType)
+                addModule(to: path, rect: cellRect(r, c), style: design.dotType) { dr, dc in
+                    let rr = r + dr, cc = c + dc
+                    guard rr >= 0, rr < n, cc >= 0, cc < n else { return false }
+                    return grid[rr * n + cc] && !insideFinder(rr, cc)
                 }
             }
         }
@@ -222,7 +215,7 @@ enum StyledQRRenderer {
 
     // MARK: - Module shapes
 
-    private static func addModule(to path: CGMutablePath, rect: CGRect, style: DotType) {
+    private static func addModule(to path: CGMutablePath, rect: CGRect, style: DotType, dark: (Int, Int) -> Bool) {
         switch style {
         case .square:
             path.addRect(rect)
@@ -233,26 +226,47 @@ enum StyledQRRenderer {
         case .dots:
             path.addEllipse(in: rect.insetBy(dx: rect.width * 0.05, dy: rect.height * 0.05))
         case .fluid:
-            // Never reached — fluid needs neighbor context and is drawn by
-            // addFluidModule in the module loop. Fallback keeps the switch
-            // exhaustive without changing behavior.
-            path.addRoundedRect(in: rect, cornerWidth: rect.width * 0.5, cornerHeight: rect.height * 0.5)
+            // Fluid modules are neighbor-aware: a corner only rounds
+            // when it faces empty space; corners between dark
+            // neighbors stay square so runs merge into one shape.
+            let radius = rect.width * 0.5
+            let up = dark(-1, 0), down = dark(1, 0), left = dark(0, -1), right = dark(0, 1)
+            addCornerRadiusModule(to: path, rect: rect,
+                                  tl: (up || left) ? 0 : radius,
+                                  tr: (up || right) ? 0 : radius,
+                                  br: (down || right) ? 0 : radius,
+                                  bl: (down || left) ? 0 : radius)
+        case .extraRounded, .classy, .classyRounded:
+            addStyledCornerModule(to: path, rect: rect, style: style, dark: dark)
         }
     }
 
-    /// One fluid module. `dark(dr, dc)` reports whether the module offset by
-    /// (dr, dc) is also ink. A corner stays SQUARE whenever either neighbor
-    /// touching it is dark — that's what makes runs fuse into one continuous
-    /// rounded line. A corner rounds (to half the module size) only when both
-    /// sides face empty space, so isolated modules become circles and run
-    /// endings become capsule caps.
-    private static func addFluidModule(to path: CGMutablePath, rect: CGRect, dark: (Int, Int) -> Bool) {
+    /// The three shapes beyond the original vocabulary, approximating
+    /// qr-code-styling's. Each rounds only the corners that face empty space —
+    /// rounding toward a neighbour would open a gap in the run — and they differ
+    /// in the radius and in whether an interior module rounds at all.
+    private static func addStyledCornerModule(to path: CGMutablePath, rect: CGRect, style: DotType, dark: (Int, Int) -> Bool) {
         let up = dark(-1, 0), down = dark(1, 0), left = dark(0, -1), right = dark(0, 1)
-        let rad = rect.width * 0.5
-        let tl: CGFloat = (up || left) ? 0 : rad
-        let tr: CGFloat = (up || right) ? 0 : rad
-        let br: CGFloat = (down || right) ? 0 : rad
-        let bl: CGFloat = (down || left) ? 0 : rad
+        let neighbours = [up, down, left, right].filter { $0 }.count
+        // Classy leaves an interior module square, so runs keep hard edges and
+        // only their ends soften. The other two round wherever there is room.
+        if style == .classy, neighbours > 1 {
+            path.addRect(rect)
+            return
+        }
+        let radius = rect.width * (style == .classyRounded ? 1 : 0.5)
+        addCornerRadiusModule(to: path, rect: rect,
+                              tl: (!up && !left) ? radius : 0,
+                              tr: (!up && !right) ? radius : 0,
+                              br: (!down && !right) ? radius : 0,
+                              bl: (!down && !left) ? radius : 0)
+    }
+
+    /// A module with an independent radius per corner, assembled from arcs
+    /// rather than `addRoundedRect`: the radius may pass half the side, where
+    /// CoreGraphics rounded rects are undefined, and it takes one radius for the
+    /// corners it is given rather than one per corner.
+    private static func addCornerRadiusModule(to path: CGMutablePath, rect: CGRect, tl: CGFloat, tr: CGFloat, br: CGFloat, bl: CGFloat) {
         path.move(to: CGPoint(x: rect.minX + tl, y: rect.minY))
         path.addLine(to: CGPoint(x: rect.maxX - tr, y: rect.minY))
         if tr > 0 {

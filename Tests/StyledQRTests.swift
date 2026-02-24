@@ -88,15 +88,23 @@ final class StyledQRTests: XCTestCase {
         XCTAssertEqual(report.checks.first { $0.id == "style" }?.status, .pass)
     }
 
-    func testLegacyDotStylesMigrateToRounded() throws {
-        // Designs saved before the vocabulary trim used retired styles;
-        // decoding must not fail — they map to the closest surviving shape.
-        for legacy in ["classy", "classyRounded", "extraRounded"] {
-            let data = Data("\"\(legacy)\"".utf8)
-            let decoded = try JSONDecoder().decode(DotType.self, from: data)
-            XCTAssertEqual(decoded, .rounded, "\(legacy) should migrate to rounded")
+    func testRetiredStylesDecodeToTheShapeTheyName() throws {
+        // These shapes were retired from the vocabulary once and migrated to
+        // rounded; they are selectable again, so a design saved with one — by
+        // the web studio, which writes kebab-case ids, or by an earlier build —
+        // has to arrive as the shape it names.
+        for (raw, expected) in [("classy", DotType.classy),
+                                ("classyRounded", DotType.classyRounded),
+                                ("classy-rounded", DotType.classyRounded),
+                                ("extraRounded", DotType.extraRounded),
+                                ("extra-rounded", DotType.extraRounded)] {
+            let data = Data("\"\(raw)\"".utf8)
+            XCTAssertEqual(try JSONDecoder().decode(DotType.self, from: data), expected, raw)
         }
-        // And the surviving vocabulary round-trips unchanged.
+        // A name this build has never seen still falls back instead of failing.
+        let unknown = Data("\"trapezoid\"".utf8)
+        XCTAssertEqual(try JSONDecoder().decode(DotType.self, from: unknown), .rounded)
+        // And the vocabulary round-trips unchanged.
         for type in DotType.allCases {
             let data = try JSONEncoder().encode(type)
             XCTAssertEqual(try JSONDecoder().decode(DotType.self, from: data), type)
@@ -158,11 +166,13 @@ final class StyledQRTests: XCTestCase {
         XCTAssertNotNil(QRRenderer.image(payload: payload, design: d))
     }
 
-    func testFluidIsVisibleWithoutScrollingInGalleryOrder() {
-        // The Dot shape gallery truncates after ~5 swatches on screen. Fluid
-        // buried at the end made it undiscoverable — users could only get the
-        // look via the Flow theme. It must stay in the first screenful.
-        XCTAssertLessThanOrEqual(DotType.allCases.firstIndex(of: .fluid)!, 3)
+    func testGalleryOrderKeepsThePlainShapesBeforeTheDecorativeOnes() {
+        // Seven shapes no longer fit in one screenful, and ShapeGallery scrolls
+        // the current selection into view, so the order now decides only what a
+        // user meets before scrolling: the plain shapes first, the decorative
+        // ones behind them.
+        XCTAssertEqual(Array(DotType.allCases.prefix(4)), [.square, .rounded, .extraRounded, .dots])
+        XCTAssertEqual(DotType.allCases.count, 7, "six web shapes plus fluid")
     }
 
     func testWideGamutColorHexRoundTripsSafely() {

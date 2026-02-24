@@ -45,10 +45,10 @@ schemes).
 **Symbologies (6)** — QR, Aztec, PDF417, Code 128, EAN-13, EAN-8. EAN check
 digits are verified.
 
-**Styling** — square, dots, rounded and fluid module shapes; rounded or
-circular finder frames; gradients; transparent backgrounds; centre logos; a
-theme gallery. Styled output is drawn as vector paths from the symbol matrix,
-so it stays sharp at any export size.
+**Styling** — seven module shapes (square, rounded, smooth, dots, classy, leaf
+and fluid); rounded or circular finder frames; gradients; transparent
+backgrounds; centre logos; a theme gallery. Styled output is drawn as vector
+paths from the symbol matrix, so it stays sharp at any export size.
 
 **Export** — SVG for print (QR codes), PNG up to 4096 px, and a print-sized PDF
 rasterised at 2048 px.

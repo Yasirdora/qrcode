@@ -163,30 +163,38 @@ struct ContentState: Codable, Equatable {
 /// Module (dot) shapes — mirrors the web studio's qr-code-styling vocabulary
 /// so both apps speak one design language.
 enum DotType: String, Codable, CaseIterable, Identifiable {
-    // Deliberately small vocabulary: square, dots, rounded square, fluid.
-    // (Order is gallery order.)
-    case square, dots, rounded, fluid
+    // Gallery order. The raw values match the web studio's vocabulary, so a
+    // design saved there names the same shape here.
+    case square, rounded, extraRounded = "extra-rounded", dots, classy, classyRounded = "classy-rounded", fluid
+
     var id: String { rawValue }
+
     var title: String {
         switch self {
         case .square: "Square"
-        case .dots: "Dots"
         case .rounded: "Rounded Square"
+        case .extraRounded: "Smooth"
+        case .dots: "Dots"
+        case .classy: "Classy"
+        case .classyRounded: "Leaf"
         case .fluid: "Fluid"
         }
     }
 
-    /// Legacy designs saved with retired styles (classy, classyRounded,
-    /// extraRounded) must not break decoding — they migrate to rounded,
-    /// the closest surviving shape.
+    /// Decoding tolerates both spellings of the multi-word styles: the web
+    /// studio writes kebab-case ids ("extra-rounded") while this type's own raw
+    /// values are camelCase. Anything genuinely unrecognised falls back to
+    /// rounded rather than failing to decode a saved design.
     init(from decoder: Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
-        switch raw {
-        case "square": self = .square
-        case "dots": self = .dots
-        case "fluid": self = .fluid
-        default: self = .rounded
+        if let exact = DotType(rawValue: raw) {
+            self = exact
+            return
         }
+        let normalised = raw.lowercased().replacingOccurrences(of: "-", with: "")
+        self = DotType.allCases.first {
+            $0.rawValue.lowercased().replacingOccurrences(of: "-", with: "") == normalised
+        } ?? .rounded
     }
 }
 

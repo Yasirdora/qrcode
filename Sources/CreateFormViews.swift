@@ -561,13 +561,36 @@ private struct FluidGlyphShape: Shape {
     }
 }
 
+/// A leaf: two opposite corners rounded at half the side. That is the silhouette
+/// a Classy module takes once a neighbour holds its other two corners square.
+private struct LeafGlyphShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let r = rect.width * 0.5
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX + r, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - r))
+        p.addArc(center: CGPoint(x: rect.maxX - r, y: rect.maxY - r), radius: r,
+                 startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
+        p.addArc(center: CGPoint(x: rect.minX + r, y: rect.minY + r), radius: r,
+                 startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
+        p.closeSubpath()
+        return p
+    }
+}
+
 extension DesignSheet {
     @ViewBuilder
     fileprivate func dotGlyph(for type: DotType) -> some View {
         switch type {
         case .square: RoundedRectangle(cornerRadius: 2, style: .continuous).fill()
         case .rounded: RoundedRectangle(cornerRadius: 8, style: .continuous).fill()
+        case .extraRounded: RoundedRectangle(cornerRadius: 14, style: .continuous).fill()
         case .dots: Circle().fill()
+        case .classy: LeafGlyphShape().fill()
+        case .classyRounded: RoundedRectangle(cornerRadius: 22, style: .continuous).fill()
         case .fluid: FluidGlyphShape().fill()
         }
     }

@@ -377,7 +377,11 @@ private struct DesignPreviewCell: View {
                 if let image {
                     Image(uiImage: image)
                         .resizable()
-                        .interpolation(.none)
+                        // Rendered at 512px and shown at ~450px on a 3× screen:
+                        // a nearest-neighbour scale at that ratio drops and
+                        // duplicates module rows. This was the last of the four
+                        // preview sites still doing it.
+                        .interpolation(.high)
                         .scaledToFit()
                 } else {
                     Image(systemName: "qrcode")

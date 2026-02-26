@@ -121,6 +121,10 @@ and never leave it. The privacy manifest declares one UserDefaults reason
 
 - **iOS 26.0 minimum.** No `#available` fallbacks, which narrows the audience
   for a utility people install on whatever phone they have.
+- **The Siri and Shortcuts intent stores the Wi-Fi password in plain text.**
+  Shortcuts persists every parameter in the shortcut definition and its run
+  history, and an app cannot mask or exclude it. The in-app field is a
+  `SecureField`; that one is the system's to store.
 - **The share extension is verified by compilation only.** The close button now
   lives in the extension's own view hierarchy; dismissing it on a device has
   not been tested.

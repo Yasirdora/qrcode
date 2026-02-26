@@ -69,6 +69,10 @@ struct MakeWiFiQRIntent: AppIntent {
     @Parameter(title: "Network name (SSID)")
     var ssid: String
 
+    /// Shortcuts persists every parameter in the shortcut definition and its run
+    /// history, so this value sits in the system's store in plain text. The app
+    /// can mask its own field (a SecureField) but cannot mask this one or keep
+    /// it out of that store; the README says so rather than implying otherwise.
     @Parameter(title: "Password", inputOptions: String.IntentInputOptions(capitalizationType: .none))
     var password: String
 

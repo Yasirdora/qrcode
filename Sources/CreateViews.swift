@@ -66,6 +66,7 @@ struct CreateView: View {
                     }
                     exportMenu
                     settingsMenu
+                    BatchTrigger(model: model)
                 }
             }
             .animation(.snappy(duration: 0.25), value: model.history.isEmpty)
@@ -379,5 +380,118 @@ struct QRDocument: FileDocument {
     }
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         .init(regularFileWithContents: data)
+    }
+}
+
+/// Opens the batch sheet. Self-contained on purpose: it owns the sheet's state
+/// and the document exporter, so the create surface needs no state of its own to
+/// host it.
+private struct BatchTrigger: View {
+    @Bindable var model: AppModel
+    @State private var presented = false
+
+    var body: some View {
+        Button {
+            Haptics.lightImpact()
+            presented = true
+        } label: {
+            Label("Batch", systemImage: "list.bullet.rectangle")
+        }
+        .accessibilityLabel("Generate codes from a list")
+        .sheet(isPresented: $presented) {
+            BatchSheet(model: model)
+        }
+    }
+}
+
+/// Paste one payload per line; get one print-ready page per code — the code
+/// itself, and the text it encodes so the pages stay identifiable.
+private struct BatchSheet: View {
+    @Bindable var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var document = QRDocument(data: Data())
+    @State private var exporting = false
+    @State private var busy = false
+    @State private var count = 0
+
+    private var payloads: [String] {
+        text.split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("One payload per line — URLs, Wi-Fi strings, or anything the selected symbology can carry. Each becomes a page of one PDF: the code, and the text it encodes.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                TextEditor(text: $text)
+                    .font(.footnote.monospaced())
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .frame(minHeight: 220)
+                    .padding(6)
+                    .background(Color(.secondarySystemGroupedBackground),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Text(count == 1 ? "1 payload" : "\(count) payloads")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .navigationTitle("Batch")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    if busy {
+                        ProgressView()
+                    } else {
+                        Button("Export PDF") { generate() }
+                            .disabled(payloads.isEmpty)
+                    }
+                }
+            }
+            .fileExporter(isPresented: $exporting, document: document, contentType: .pdf,
+                          defaultFilename: "qrcode-batch-\(count)") { result in
+                switch result {
+                case .success:
+                    Haptics.success()
+                    model.showToast("Saved \(count) codes")
+                case .failure:
+                    Haptics.error()
+                }
+                dismiss()
+            }
+            .task(id: text) {
+                // Counting is cheap; rendering is not, so the count is live and
+                // the work happens on demand.
+                let lines = payloads.count
+                guard lines != count else { return }
+                count = lines
+            }
+        }
+    }
+
+    private func generate() {
+        let list = payloads
+        let design = model.design
+        busy = true
+        Task { @MainActor in
+            let data = await Task.detached(priority: .userInitiated) {
+                QRRenderer.batchPDF(payloads: list, design: design)
+            }.value
+            busy = false
+            guard let data else {
+                Haptics.error()
+                model.showToast("Nothing to generate")
+                return
+            }
+            document = QRDocument(data: data)
+            exporting = true
+        }
     }
 }

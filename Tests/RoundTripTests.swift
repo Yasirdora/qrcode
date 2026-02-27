@@ -184,6 +184,37 @@ final class RoundTripTests: XCTestCase {
                      "a linear code has no module geometry to serialise")
     }
 
+    // MARK: - Batch export
+
+    /// A batch is one document of pages: one per payload, blank lines dropped,
+    /// and nothing added for a payload the symbology cannot encode.
+    func testBatchPDFHasOnePagePerPayload() throws {
+        let payloads = ["https://example.com/one", "https://example.com/two", "https://example.com/three"]
+        guard let data = QRRenderer.batchPDF(payloads: payloads, design: DesignOptions()),
+              let provider = CGDataProvider(data: data as CFData),
+              let document = CGPDFDocument(provider) else {
+            return XCTFail("no readable batch PDF produced")
+        }
+        XCTAssertEqual(document.numberOfPages, payloads.count, "one page per code")
+
+        let padded = ["https://example.com/one", "", "   ", "https://example.com/two"]
+        let paddedData = QRRenderer.batchPDF(payloads: padded, design: DesignOptions())
+        let paddedDoc = (paddedData.flatMap { CGDataProvider(data: $0 as CFData) }).flatMap { CGPDFDocument($0) }
+        XCTAssertEqual(paddedDoc?.numberOfPages, 2, "blank lines are not pages")
+
+        XCTAssertNil(QRRenderer.batchPDF(payloads: [], design: DesignOptions()))
+        XCTAssertNil(QRRenderer.batchPDF(payloads: ["", "  "], design: DesignOptions()))
+
+        // A linear symbology cannot encode a URL: the page is skipped rather
+        // than rendered blank.
+        var ean = DesignOptions()
+        ean.symbology = .ean13
+        let mixed = ["4006381333931", "https://example.com/not-an-ean"]
+        let mixedData = QRRenderer.batchPDF(payloads: mixed, design: ean)
+        let mixedDoc = (mixedData.flatMap { CGDataProvider(data: $0 as CFData) }).flatMap { CGPDFDocument($0) }
+        XCTAssertEqual(mixedDoc?.numberOfPages, 1)
+    }
+
     /// 64×64 mid-gray square — stands in for any user logo.
     private static let solidLogo: Data = {
         let r = UIGraphicsImageRenderer(size: CGSize(width: 64, height: 64))

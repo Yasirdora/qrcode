@@ -449,6 +449,60 @@ enum QRRenderer {
             .replacingOccurrences(of: "\"", with: "&quot;")
             .replacingOccurrences(of: "'", with: "&apos;")
     }
+
+    // MARK: - Batch
+
+    /// One page per payload, each page carrying the code and the text it
+    /// encodes.
+    ///
+    /// A run of codes is more useful as a single print-ready document than as a
+    /// folder of files, and a multi-page PDF needs no archive format to write
+    /// it: no dependency, and nothing to get subtly wrong. The web studio writes
+    /// individual PNG/SVG files into a ZIP, which is the one place the two
+    /// implementations differ in output shape.
+    static func batchPDF(payloads: [String], design: DesignOptions) -> Data? {
+        let contents = payloads
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard !contents.isEmpty else { return nil }
+
+        var sheet = design
+        sheet.exportSize = 1024
+        // Render every code before laying anything out: a payload this symbology
+        // cannot encode should leave the document a page shorter, not leave a
+        // blank page or an invalid file.
+        let entries = contents.compactMap { payload in
+            image(payload: payload, design: sheet).map { (payload: payload, image: $0) }
+        }
+        guard !entries.isEmpty else { return nil }
+
+        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 612)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        return renderer.pdfData { ctx in
+            let inset = pageRect.insetBy(dx: 46, dy: 46)
+            let room = CGRect(x: inset.minX, y: inset.minY,
+                              width: inset.width, height: inset.height - 20)
+            let captionAttr: [NSAttributedString.Key: Any] = [
+                .font: UIFont.monospacedSystemFont(ofSize: 10, weight: .regular),
+                .foregroundColor: UIColor.secondaryLabel,
+            ]
+            for (index, entry) in entries.enumerated() {
+                ctx.beginPage()
+                let scale = min(room.width / entry.image.size.width,
+                                room.height / entry.image.size.height)
+                let drawRect = CGRect(x: room.midX - entry.image.size.width * scale / 2,
+                                      y: room.minY,
+                                      width: entry.image.size.width * scale,
+                                      height: entry.image.size.height * scale)
+                entry.image.draw(in: drawRect)
+                // Which code is which matters once the pages are printed.
+                let label = entry.payload.count > 72 ? "\(entry.payload.prefix(69))…" : entry.payload
+                ("\(index + 1) of \(entries.count) · \(label)" as NSString)
+                    .draw(at: CGPoint(x: inset.minX, y: inset.maxY - 12),
+                          withAttributes: captionAttr)
+            }
+        }
+    }
 }
 
 extension DesignOptions {

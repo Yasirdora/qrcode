@@ -53,6 +53,11 @@ paths from the symbol matrix, so it stays sharp at any export size.
 **Export** — SVG for print (QR codes), PNG up to 4096 px, and a print-sized PDF
 rasterised at 2048 px.
 
+**Batch** — paste a list, get one PDF with a page per code, each page labelled
+with the payload it encodes. The web studio writes individual files into a ZIP;
+on iOS a single print-ready document needs no archive format, and the difference
+is deliberate rather than missing.
+
 **Context Band** — an optional strip below the code showing a call to action
 and the destination, so a scan target is visible before scanning. The label is
 derived from the payload type; a Wi-Fi password is never printed.
@@ -92,7 +97,7 @@ xcodebuild -project QRFlow.xcodeproj -scheme QRFlow \
 ```
 
 Replace the destination with an installed simulator (`xcrun simctl list devices
-available`). 69 tests, all passing.
+available`). 70 tests, all passing.
 
 The web studio carries its own suite: `cd web && npm run verify` runs the
 linter, 17 tests and a production build.

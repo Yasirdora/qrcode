@@ -12,74 +12,194 @@ struct CreateView: View {
     @State private var exportType: UTType = .png
     @State private var exporterPresented = false
     @State private var scoreSheetPresented = false
+    @State private var batchPresented = false
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    previewCell
-                }
-
-                // The mode dial only makes sense for symbologies that can
-                // carry structured payloads; linear codes hide it.
-                if model.design.symbology.carriesRichPayload {
-                    Section {
+            ScrollView {
+                VStack(spacing: Theme.gutter) {
+                    heroCard
+                    // The actions only exist once there is something to act on;
+                    // the empty state above says what to do instead of offering
+                    // buttons that cannot work.
+                    if preview != nil {
+                        actionBar
+                    }
+                    if model.design.symbology.carriesRichPayload {
                         modeStrip
-                            .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
-                            .listRowBackground(Color.clear)
                     }
+                    contentCard
                 }
-
-                Section("Content") {
-                    ContentForm(content: $model.content, symbology: model.design.symbology)
-                }
-
-                // A code with no content earns no score — showing "100
-                // Excellent" for an empty symbol was exactly the kind of
-                // dishonesty this report exists to prevent.
-                if !model.payload.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Section {
-                        scoreRow
-                    }
-                }
+                .padding(.horizontal, Theme.gutter)
+                .padding(.vertical, Theme.tight)
             }
-            .listStyle(.insetGrouped)
-            // No large title — the leading symbology pill names the canvas,
-            // the bar names the destinations. Redundant chrome.
+            .background(Theme.page)
+            // No large title: the leading pill names the symbology, the bar names
+            // the destinations. A third title would be chrome.
             .toolbar {
-                // Symbology is the canvas's identity — the leading system
-                // pill slot, visible even mid-scroll.
                 ToolbarItem(placement: .topBarLeading) {
                     symbologyMenu
                 }
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    exportMenu
-                    settingsMenu
-                    BatchTrigger(model: model)
+                ToolbarItem(placement: .topBarTrailing) {
+                    overflowMenu
                 }
             }
             // The scanability report stays a sheet: it is a detail you consult
-            // and dismiss. Design and Library are destinations now and need no
-            // sheet of their own.
+            // and dismiss, not a place.
             .sheet(isPresented: $scoreSheetPresented) {
                 scoreSheet
             }
-            // Regenerate the preview whenever inputs change. Rendering is
-            // sub-millisecond on CoreImage; a tiny debounce still keeps
-            // keystroke storms from re-rendering per character.
+            .sheet(isPresented: $batchPresented) {
+                BatchSheet(model: model)
+            }
+            // Regenerate whenever inputs change. Rendering is sub-millisecond on
+            // CoreImage; the small debounce only keeps keystroke storms from
+            // re-rendering per character.
             .task(id: model.content) { await regenerate() }
             .task(id: model.design) { await regenerate() }
             .fileExporter(isPresented: $exporterPresented, document: exportDocument, contentType: exportType, defaultFilename: "qrcode-\(model.design.symbology.rawValue)") { result in
                 switch result {
                 case .success:
                     model.saveToHistory()
-                    model.showToast("Saved — added to history")
+                    model.showToast("Saved to your library")
                     Haptics.success()
                 case .failure:
                     Haptics.error()
                 }
             }
         }
+    }
+
+    // MARK: Hero and actions
+
+    /// The code is the point of the screen, so it gets the one surface that is
+    /// not chrome: paper. The score is attached to it rather than sitting in a
+    /// row of its own, because the score is a property of this code.
+    private var heroCard: some View {
+        VStack(spacing: 0) {
+            Group {
+                if let preview {
+                    Image(uiImage: preview)
+                        .resizable()
+                        // Rendered at 1024px and shown at ~840px on a 3× screen:
+                        // nearest-neighbour at a non-integer ratio drops and
+                        // duplicates whole module rows.
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .accessibilityLabel("QR code for \(model.summary)")
+                } else {
+                    VStack(spacing: Theme.tight) {
+                        Image(systemName: "qrcode")
+                            .font(.system(size: 44))
+                            .foregroundStyle(Theme.ink.opacity(0.18))
+                        Text("Enter content to activate this code")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.ink.opacity(0.55))
+                    }
+                    .padding(.vertical, 56)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(Theme.cardPadding)
+            .padding(.bottom, Theme.tight)
+
+            if preview != nil, !model.payload.isEmpty {
+                Text(model.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.ink.opacity(0.6))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .padding(.bottom, Theme.cardPadding)
+
+                Divider()
+                    .overlay(Theme.ink.opacity(0.12))
+
+                scoreLine
+            } else {
+                EmptyView()
+            }
+        }
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
+                .stroke(Theme.hairline, lineWidth: 0.5)
+        )
+    }
+
+    /// The score, on the code's own card, opening the full report when tapped.
+    private var scoreLine: some View {
+        Button {
+            scoreSheetPresented = true
+        } label: {
+            HStack(alignment: .center, spacing: Theme.cardPadding) {
+                Text("\(model.report.score)")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundStyle(model.report.color)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(model.report.grade)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text("Scanability")
+                        .font(.caption)
+                        .foregroundStyle(Theme.ink.opacity(0.55))
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.ink.opacity(0.3))
+            }
+            .padding(Theme.cardPadding)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Scanability \(model.report.score) of 100, \(model.report.grade). Opens the full report.")
+    }
+
+    /// The three things a person does with a finished code, as pills rather than
+    /// toolbar glyphs: share it, save a raster, save a vector. Print-grade PDF,
+    /// batching and reset live behind the overflow.
+    private var actionBar: some View {
+        HStack(spacing: Theme.tight) {
+            if let preview {
+                ShareLink(item: Image(uiImage: preview),
+                          preview: SharePreview(model.summary, image: Image(uiImage: preview))) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .simultaneousGesture(TapGesture().onEnded { model.saveToHistory() })
+            }
+            Button {
+                export(.png)
+            } label: {
+                Label("Save", systemImage: "square.and.arrow.down")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            // Vector output is QR-only: the other symbologies are CoreImage
+            // bitmaps with no module geometry to serialise, so the pill appears
+            // only where it can be honoured.
+            if model.design.symbology == .qr {
+                Button {
+                    export(.svg)
+                } label: {
+                    Text("SVG").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .accessibilityLabel("Save as SVG")
+            }
+        }
+    }
+
+    /// The fields, in a card rather than a grouped list: a list made this read
+    /// like Settings, and these are steps on the way to a code.
+    private var contentCard: some View {
+        ContentForm(content: $model.content, symbology: model.design.symbology)
+            .padding(Theme.cardPadding)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
     }
 
     // MARK: Toolbar items
@@ -109,44 +229,21 @@ struct CreateView: View {
         .accessibilityHint("Opens the symbology menu")
     }
 
-    /// ONE export affordance, in the toolbar where Apple puts actions. The
-    /// system share sheet covers Photos/Files/AirDrop; Files export adds
-    /// PNG and print-grade PDF without a second button on screen.
-    private var exportMenu: some View {
+    /// Everything that is not part of the create loop.
+    private var overflowMenu: some View {
         Menu {
-            if let preview {
-                ShareLink(item: Image(uiImage: preview),
-                          preview: SharePreview(model.summary, image: Image(uiImage: preview))) {
-                    Label("Share Image…", systemImage: "square.and.arrow.up")
-                }
-                .simultaneousGesture(TapGesture().onEnded { model.saveToHistory() })
-                Button { export(.png) } label: {
-                    Label("Save PNG to Files", systemImage: "folder")
-                }
-                Button { export(.pdf) } label: {
-                    Label("Save PDF for Print", systemImage: "printer")
-                }
-                // Vector output is QR-only: the other symbologies are CoreImage
-                // bitmaps with no module geometry to serialise, so the option
-                // is hidden rather than offered and then refused.
-                if model.design.symbology == .qr {
-                    Button { export(.svg) } label: {
-                        Label("Save SVG for Print", systemImage: "scribble.variable")
-                    }
-                }
+            Button {
+                export(.pdf)
+            } label: {
+                Label("Save PDF for Print", systemImage: "printer")
             }
-        } label: {
-            Image(systemName: "square.and.arrow.up")
-        }
-        .disabled(preview == nil)
-        .accessibilityLabel("Export QR code")
-    }
-
-    /// Overflow for actions that are not part of the create loop. Design is a
-    /// destination in the bar now, so the only thing left here is a way back to
-    /// the defaults after experimenting.
-    private var settingsMenu: some View {
-        Menu {
+            .disabled(preview == nil)
+            Button {
+                batchPresented = true
+            } label: {
+                Label("Generate from a List…", systemImage: "list.bullet.rectangle")
+            }
+            Divider()
             Button {
                 let symbology = model.design.symbology
                 model.design = DesignOptions()
@@ -162,56 +259,16 @@ struct CreateView: View {
         .accessibilityLabel("More actions")
     }
 
-    // MARK: Cells
+    // MARK: Mode strip
 
-    /// The hero: the code itself, on a plain list cell. No buttons, no
-    /// frame-within-a-frame — the quiet zone is the margin.
-    private var previewCell: some View {
-        VStack(spacing: 10) {
-            if let preview {
-                Image(uiImage: preview)
-                    .resizable()
-                    // Rendered at 1024px and shown at ~840px on a 3× screen:
-                    // nearest-neighbour at a non-integer ratio drops and
-                    // duplicates whole module rows, so modules look unevenly
-                    // sized on screen while the exported file stays perfect.
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .frame(maxWidth: 280)
-                    .padding(.vertical, 6)
-                    .accessibilityLabel("QR code preview for \(model.summary)")
-            } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "qrcode")
-                        .font(.system(size: 44))
-                        .foregroundStyle(.quaternary)
-                    Text("Enter content to activate this code")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 48)
-            }
-            if !model.payload.isEmpty {
-                Text(model.summary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    /// Camera-style mode dial: eleven modes scroll horizontally in unfilled
-    /// capsules; the selected one takes a soft accent tint — the App Store
-    /// filter idiom, not a solid marketing pill.
+    /// The content types as a scrolling row of capsules. The selection takes a
+    /// soft accent tint — the filter idiom, not a solid marketing pill.
     private var modeStrip: some View {
-        // ScrollViewReader keeps the selected capsule visible — the Camera-
-        // app rule applies to scrolling too: the current mode is never
-        // hidden, even when the change came from a history restore.
+        // ScrollViewReader keeps the selected capsule visible: the current mode
+        // is never hidden, even when a restore is what changed it.
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.tight) {
                     ForEach(ContentType.allCases) { type in
                         Button {
                             Haptics.selection()
@@ -223,17 +280,16 @@ struct CreateView: View {
                                 .padding(.vertical, 7)
                                 .background(
                                     model.content.type == type
-                                        ? Color.accentColor.opacity(0.14)
-                                        : Color(.secondarySystemGroupedBackground),
+                                        ? Theme.accent.opacity(0.14)
+                                        : Theme.surface,
                                     in: Capsule()
                                 )
-                                .foregroundStyle(model.content.type == type ? Color.accentColor : .primary)
+                                .foregroundStyle(model.content.type == type ? Theme.accent : .primary)
                         }
                         .id(type.id)
                         .accessibilityAddTraits(model.content.type == type ? .isSelected : [])
                     }
                 }
-                .padding(.horizontal, 20)
             }
             .scrollClipDisabled()
             .onAppear { proxy.scrollTo(model.content.type.id, anchor: .center) }
@@ -241,36 +297,6 @@ struct CreateView: View {
                 withAnimation(.snappy(duration: 0.25)) { proxy.scrollTo(new.id, anchor: .center) }
             }
         }
-    }
-
-    /// Scanability as ONE quiet row — grade plus a mini ring. The full
-    /// checklist is disclosed on demand, never waved at the user mid-flow.
-    private var scoreRow: some View {
-        // A Button rather than a tap gesture with an .isButton trait. The trait
-        // made VoiceOver announce it correctly, but Switch Control and Full
-        // Keyboard Access could not activate it.
-        Button {
-            scoreSheetPresented = true
-        } label: {
-            HStack(spacing: 12) {
-                MiniScoreRing(score: model.report.score)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(model.report.grade)
-                        .font(.subheadline.weight(.medium))
-                    Text("Scanability report")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Scanability \(model.report.score) of 100, \(model.report.grade). Opens the full report.")
     }
 
     private var scoreSheet: some View {
@@ -359,27 +385,6 @@ struct QRDocument: FileDocument {
     }
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         .init(regularFileWithContents: data)
-    }
-}
-
-/// Opens the batch sheet. Self-contained on purpose: it owns the sheet's state
-/// and the document exporter, so the create surface needs no state of its own to
-/// host it.
-private struct BatchTrigger: View {
-    @Bindable var model: AppModel
-    @State private var presented = false
-
-    var body: some View {
-        Button {
-            Haptics.lightImpact()
-            presented = true
-        } label: {
-            Label("Batch", systemImage: "list.bullet.rectangle")
-        }
-        .accessibilityLabel("Generate codes from a list")
-        .sheet(isPresented: $presented) {
-            BatchSheet(model: model)
-        }
     }
 }
 

@@ -94,17 +94,17 @@ struct ToastView: View {
     }
 }
 
-/// Scanability ring + grade, mirroring the web meter's visual language.
+/// Scanability ring and grade, for the report sheet. The hero card shows the
+/// score as a numeral instead — a ring at 34pt would be a smaller diagram for
+/// the same fact.
 struct ScoreRing: View {
     let score: Int
     let grade: String
 
-    private var color: Color {
-        score >= 90 ? .green : score >= 70 ? Color(red: 0.4, green: 0.64, blue: 0.05) : score >= 45 ? .orange : .red
-    }
+    private var color: Color { ScorePalette.color(score) }
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: Theme.cardPadding) {
             ZStack {
                 Circle().stroke(.quaternary, lineWidth: 7)
                 Circle()
@@ -128,32 +128,6 @@ struct ScoreRing: View {
     }
 }
 
-/// The mini ring for the inline score row — same visual language as
-/// ScoreRing at list-accessory size.
-struct MiniScoreRing: View {
-    let score: Int
-
-    private var color: Color {
-        score >= 90 ? .green : score >= 70 ? Color(red: 0.4, green: 0.64, blue: 0.05) : score >= 45 ? .orange : .red
-    }
-
-    var body: some View {
-        ZStack {
-            Circle().stroke(.quaternary, lineWidth: 3)
-            Circle()
-                .trim(from: 0, to: CGFloat(score) / 100)
-                .stroke(color, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .animation(.smooth(duration: 0.5), value: score)
-            Text("\(score)")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .foregroundStyle(color)
-                .contentTransition(.numericText())
-        }
-        .frame(width: 30, height: 30)
-    }
-}
-
 /// A single scanability finding with its status glyph.
 struct CheckRow: View {
     let check: Scanability.Check
@@ -174,5 +148,20 @@ struct CheckRow: View {
             Text("\(Text(check.label + ": ").font(.footnote.weight(.medium)).foregroundStyle(.primary))\(Text(check.detail).font(.footnote).foregroundStyle(.secondary))")
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+extension Scanability.Report {
+    var color: Color { ScorePalette.color(score) }
+}
+
+/// The score's colour lives here once, so the ring, the hero card and anything
+/// else that shows a score cannot drift apart.
+enum ScorePalette {
+    static func color(_ score: Int) -> Color {
+        score >= 90 ? .green
+            : score >= 70 ? Color(red: 0.4, green: 0.64, blue: 0.05)
+            : score >= 45 ? .orange
+            : .red
     }
 }

@@ -4,21 +4,46 @@ import SwiftUI
 /// catalog tokens (`AccentColor`), never hard-coded — light, dark and tinted
 /// appearances stay consistent for free.
 
-/// Flat grouped-content surface: the iOS 26 inset-grouped idiom — a plain
-/// fill on the grouped background, no shadow, no stroke. Shadows and
-/// hairlines were what made the app read as a web page.
+/// Visual constants, and the one rule that governs them: the chrome follows the
+/// system appearance, the paper never does. A code is printed on white in both
+/// appearances — a symbol on a dark surface is a scanability problem, not a
+/// style choice.
+enum Theme {
+    // Radii
+    static let card: CGFloat = 22
+    static let control: CGFloat = 14
+
+    // Spacing
+    static let gutter: CGFloat = 16
+    static let cardPadding: CGFloat = 16
+    static let tight: CGFloat = 8
+
+    // Chrome, all adaptive
+    static var page: Color { Color(.systemGroupedBackground) }
+    static var surface: Color { Color(.secondarySystemGroupedBackground) }
+    static var surfaceRaised: Color { Color(.tertiarySystemGroupedBackground) }
+    static var hairline: Color { Color(.separator).opacity(0.45) }
+    static var accent: Color { .accentColor }
+
+    /// The one colour that does not follow the appearance.
+    static let paper = Color.white
+    static let ink = Color(red: 0.067, green: 0.094, blue: 0.153)
+}
+
+/// Flat grouped-content surface: a plain fill on the grouped background, no
+/// shadow and no stroke, so a card reads as paper rather than as a web panel.
 struct PanelModifier: ViewModifier {
-    var cornerRadius: CGFloat = 16
+    var cornerRadius: CGFloat = Theme.card
 
     func body(content: Content) -> some View {
         content
-            .background(Color(.secondarySystemGroupedBackground),
+            .background(Theme.surface,
                         in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 }
 
 extension View {
-    func panel(cornerRadius: CGFloat = 20) -> some View {
+    func panel(cornerRadius: CGFloat = Theme.card) -> some View {
         modifier(PanelModifier(cornerRadius: cornerRadius))
     }
 }

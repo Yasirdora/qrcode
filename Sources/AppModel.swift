@@ -6,15 +6,33 @@ import SwiftUI
 @MainActor
 @Observable
 final class AppModel {
-    enum Tab: Hashable {
-        case create, scan
+    /// Three destinations on one side of the bar. The scanner is an action, not
+    /// a place: it lives on the other side and opens over everything, the way a
+    /// camera should.
+    enum Tab: Hashable, CaseIterable {
+        case create, design, library
+
+        var title: String {
+            switch self {
+            case .create: "Create"
+            case .design: "Design"
+            case .library: "Library"
+            }
+        }
+
+        var image: String {
+            switch self {
+            case .create: "qrcode"
+            case .design: "paintpalette"
+            case .library: "square.grid.2x2"
+            }
+        }
     }
 
     var tab: Tab = .create
+    var scanPresented = false
     var content = ContentState()
     var design = DesignOptions()
-    var designSheetPresented = false
-    var historySheetPresented = false
     private(set) var history: [HistoryEntry] = []
 
     var toast: String?
@@ -60,13 +78,19 @@ final class AppModel {
                     : forced == .ean8 ? "96385074" : "4006381333931"
             }
         }
-        // -ui-tab=scan opens the Scan surface; -ui-design presents the
-        // design sheet — both for headless screenshot verification.
-        if let i = args.firstIndex(of: "-ui-tab"), i + 1 < args.count, args[i + 1] == "scan" {
-            tab = .scan
+        // -ui-tab=<create|design|library|scan> opens a destination for headless
+        // screenshot verification. "scan" opens the camera cover, because the
+        // scanner is no longer a tab.
+        if let i = args.firstIndex(of: "-ui-tab"), i + 1 < args.count {
+            switch args[i + 1] {
+            case "design": tab = .design
+            case "library": tab = .library
+            case "scan": scanPresented = true
+            default: tab = .create
+            }
         }
         if args.contains("-ui-design") {
-            designSheetPresented = true
+            tab = .design
         }
         if args.contains("-ui-seed-history"), history.isEmpty {
             history = [HistoryEntry(id: UUID(), createdAt: Date(),

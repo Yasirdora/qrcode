@@ -189,8 +189,12 @@ extension Binding {
     }
 }
 
-/// Design settings — a sheet, not a step (the same UX ruling as the web app).
-struct DesignSheet: View {
+/// The design studio, as a destination of its own rather than a sheet.
+///
+/// It keeps a compact title on purpose: this is a workbench, and a large title
+/// would push the live preview — the thing you are actually looking at — below
+/// the fold on every visit.
+struct DesignView: View {
     @Bindable var model: AppModel
     @State private var logoItem: PhotosPickerItem?
 
@@ -332,11 +336,6 @@ struct DesignSheet: View {
             }
             .navigationTitle("Design")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { model.designSheetPresented = false }
-                }
-            }
             .onChange(of: logoItem) { _, item in
                 guard let item else { return }
                 Task {
@@ -585,7 +584,7 @@ private struct LeafGlyphShape: Shape {
     }
 }
 
-extension DesignSheet {
+extension DesignView {
     @ViewBuilder
     fileprivate func dotGlyph(for type: DotType) -> some View {
         switch type {

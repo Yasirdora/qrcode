@@ -45,8 +45,24 @@ struct ScanView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            // No nav title — the bottom capsule already names the verb,
-            // matching the Create surface's chrome.
+            // Presented over the app, so it carries its own way out: there is no
+            // tab bar behind it to fall back to.
+            .navigationTitle("Scan")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        Haptics.lightImpact()
+                        model.scanPresented = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityLabel("Close the scanner")
+                }
+            }
             .task { await resolveCameraAuthorization() }
             .onChange(of: pickerItem) { _, item in
                 guard let item else { return }
@@ -57,6 +73,10 @@ struct ScanView: View {
                 }
             }
         }
+        // A viewfinder is dark whatever the system appearance is: every camera
+        // experience on this platform is, and a white sheet in front of a lens
+        // is the wrong thing to hold up at night.
+        .preferredColorScheme(.dark)
     }
 
     /// Without this, a user who taps "Don't Allow" once gets a black

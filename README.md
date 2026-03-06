@@ -75,7 +75,7 @@ PDF417, Code 128, EAN and Data Matrix.
 | Model and encoding | `Models.swift`, `PayloadBuilder.swift`, `EANEncoder.swift`, `Scanability.swift` | Payload construction, EAN check digits, Bitcoin address checksums, scanability rules. Imports Foundation and CryptoKit only, so it is testable without a simulator. |
 | Rendering | `QRRenderer.swift`, `StyledQRRenderer.swift` | Integer-pixel-per-module rasterisation, the vector path renderer, logo composition, the Context Band, PNG and PDF output. |
 | Capture | `ScanViews.swift` | AVFoundation camera, Vision decoding, permission states. |
-| Interface | `QRFlowApp.swift`, `AppModel.swift`, `CreateViews.swift`, `CreateFormViews.swift`, `HistoryViews.swift`, `ComponentViews.swift`, `OnboardingViews.swift` | One `@Observable` model holds state, navigation and persistence. |
+| Interface | `QRFlowApp.swift`, `AppModel.swift`, `CreateViews.swift`, `CreateFormViews.swift`, `HistoryViews.swift`, `ComponentViews.swift`, `OnboardingViews.swift` | One `@Observable` model holds state, navigation and persistence. The bar carries three destinations — Create, Design, Library — and the scanner opens as a camera cover rather than claiming a fourth. |
 | Integration | `QRFlowIntents.swift`, `ShareExtension/` | App Intents and the share extension, built against the same renderer. |
 
 Constraints held throughout: no third-party dependencies, no network code, and

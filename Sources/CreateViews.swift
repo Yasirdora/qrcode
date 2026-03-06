@@ -45,7 +45,7 @@ struct CreateView: View {
             }
             .listStyle(.insetGrouped)
             // No large title — the leading symbology pill names the canvas,
-            // the bottom capsule names the verb. Redundant chrome.
+            // the bar names the destinations. Redundant chrome.
             .toolbar {
                 // Symbology is the canvas's identity — the leading system
                 // pill slot, visible even mid-scroll.
@@ -53,30 +53,14 @@ struct CreateView: View {
                     symbologyMenu
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    // Progressive disclosure: history exists only once the
-                    // first code has been shared or exported.
-                    if !model.history.isEmpty {
-                        Button {
-                            Haptics.lightImpact()
-                            model.historySheetPresented = true
-                        } label: {
-                            Label("History", systemImage: "clock.arrow.circlepath")
-                        }
-                        .transition(.scale.combined(with: .opacity))
-                    }
                     exportMenu
                     settingsMenu
                     BatchTrigger(model: model)
                 }
             }
-            .animation(.snappy(duration: 0.25), value: model.history.isEmpty)
-            .sheet(isPresented: $model.designSheetPresented) {
-                DesignSheet(model: model)
-                    .presentationDetents([.medium, .large])
-            }
-            .sheet(isPresented: $model.historySheetPresented) {
-                HistoryView(model: model)
-            }
+            // The scanability report stays a sheet: it is a detail you consult
+            // and dismiss. Design and Library are destinations now and need no
+            // sheet of their own.
             .sheet(isPresented: $scoreSheetPresented) {
                 scoreSheet
             }
@@ -158,16 +142,11 @@ struct CreateView: View {
         .accessibilityLabel("Export QR code")
     }
 
-    /// Settings affordance next to export — secondary actions that aren't
-    /// part of the create loop: another path into Design, and a way back
-    /// to defaults after experimentation.
+    /// Overflow for actions that are not part of the create loop. Design is a
+    /// destination in the bar now, so the only thing left here is a way back to
+    /// the defaults after experimenting.
     private var settingsMenu: some View {
         Menu {
-            Button {
-                model.designSheetPresented = true
-            } label: {
-                Label("Design…", systemImage: "paintpalette")
-            }
             Button {
                 let symbology = model.design.symbology
                 model.design = DesignOptions()
@@ -180,7 +159,7 @@ struct CreateView: View {
         } label: {
             Image(systemName: "ellipsis")
         }
-        .accessibilityLabel("Settings")
+        .accessibilityLabel("More actions")
     }
 
     // MARK: Cells

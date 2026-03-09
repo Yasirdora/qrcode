@@ -19,6 +19,16 @@ struct ScanView: View {
     var body: some View {
         NavigationStack {
             List {
+                // The result is the reason the scanner is open, so once there is
+                // one it moves above the camera. A section at the foot of the
+                // list made VoiceOver pass the viewfinder and both pickers
+                // before it reached the thing the person had just scanned.
+                if result != nil {
+                    Section("Result") {
+                        resultRows
+                    }
+                }
+
                 Section {
                     cameraCell
                         .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
@@ -40,8 +50,12 @@ struct ScanView: View {
                     }
                 }
 
-                Section("Result") {
-                    resultRows
+                // With no result yet this section holds the guidance for using
+                // the scanner, which belongs under the camera rather than over it.
+                if result == nil {
+                    Section("Result") {
+                        resultRows
+                    }
                 }
             }
             .listStyle(.insetGrouped)

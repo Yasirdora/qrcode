@@ -1,13 +1,13 @@
 <table>
   <tr>
     <td><img src="Screenshots/01-onboarding.png" width="240" alt="Onboarding"></td>
-    <td><img src="Screenshots/02-create.png" width="240" alt="Create surface with a live QR code and the scanability score"></td>
+    <td><img src="Screenshots/02-create.png" width="240" alt="The create surface: the code on a paper card with its scanability score, and the action pills"></td>
     <td><img src="Screenshots/03-styled.png" width="240" alt="Fluid modules with a gradient and circular finder dots"></td>
   </tr>
   <tr>
-    <td><img src="Screenshots/04-ean.png" width="240" alt="EAN-13 barcode with verified check digits"></td>
-    <td><img src="Screenshots/05-design.png" width="240" alt="Design sheet with the live preview and theme gallery"></td>
-    <td></td>
+    <td><img src="Screenshots/04-ean.png" width="240" alt="An EAN-13 barcode with verified check digits"></td>
+    <td><img src="Screenshots/05-design.png" width="240" alt="The design studio: live preview, themes, colours and module shapes"></td>
+    <td><img src="Screenshots/06-scan.png" width="240" alt="The scanner, presented over the app and dark by design"></td>
   </tr>
 </table>
 

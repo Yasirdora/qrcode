@@ -38,6 +38,10 @@ struct RootView: View {
 
 struct ShellView: View {
     @Bindable var model: AppModel
+    /// Whether the keyboard is up. A custom bar must not ride above it: the
+    /// system's own bars are covered by the keyboard, and the field being typed
+    /// into needs that space far more than the destinations do.
+    @State private var typing = false
 
     var body: some View {
         // The bar is custom rather than a TabView's: the system only draws its
@@ -76,9 +80,20 @@ struct ShellView: View {
                 }
         )
         // safeAreaInset, not overlay: the bar floats over the content, so an
-        // overlay let it sit on top of the last row. An inset reserves it.
+        // overlay let it sit on top of the last row. An inset reserves the space,
+        // and withdrawing the bar while typing reserves it for the keyboard.
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            BottomBar(model: model)
+            if !typing {
+                BottomBar(model: model)
+                    .transition(.move(edge: .bottom))
+            }
+        }
+        .animation(.snappy(duration: 0.2), value: typing)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            typing = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            typing = false
         }
         // A camera is somewhere you go and come back from, so it covers the app
         // rather than claiming a share of the destinations.

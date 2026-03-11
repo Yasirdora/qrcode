@@ -126,24 +126,24 @@ struct CreateView: View {
         )
     }
 
-    /// The score, on the code's own card, opening the full report when tapped.
+    /// The score, on the code's card, opening the report when tapped. It is a
+    /// label with a value rather than a headline: the code is the subject of
+    /// this screen, and a large numeral beside it would be a second one.
     private var scoreLine: some View {
         Button {
             scoreSheetPresented = true
         } label: {
-            HStack(alignment: .center, spacing: Theme.cardPadding) {
-                Text("\(model.report.score)")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                    .foregroundStyle(model.report.color)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(model.report.grade)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.ink)
-                    Text("Scanability")
-                        .font(.caption)
-                        .foregroundStyle(Theme.ink.opacity(0.55))
-                }
+            HStack(spacing: Theme.tight) {
+                Text("Scanability")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.ink)
                 Spacer()
+                Text("\(model.report.score)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(model.report.color)
+                Text(model.report.grade)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.ink.opacity(0.6))
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.ink.opacity(0.3))

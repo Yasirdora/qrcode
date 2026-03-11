@@ -200,140 +200,124 @@ struct DesignView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                // Live preview inside the sheet: design decisions should
-                // never be blind — the sheet updates the code as you tap.
-                // The container is always white: a QR needs a clean stage,
-                // not the grouped-form grey.
-                Section {
+            ScrollView {
+                VStack(spacing: Theme.gutter) {
+                    // The code is the subject here too: every control below is
+                    // changing it, so it sits at the top on the same paper the
+                    // create surface uses.
                     DesignPreviewCell(model: model)
-                        .listRowBackground(Color.white)
-                }
+                        .padding(Theme.cardPadding)
+                        .frame(maxWidth: .infinity)
+                        .background(Theme.paper, in: RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
+                                .stroke(Theme.hairline, lineWidth: 0.5)
+                        )
 
-                // Curated looks — one tap applies a whole coherent design,
-                // then every control below still allows fine-tuning.
-                if model.design.symbology == .qr {
-                    Section("Themes") {
-                        ThemeGallery(model: model)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-                            .listRowBackground(Color.clear)
-                    }
-                }
-
-                Section("Colors") {
-                    ColorPicker("Module color", selection: hexBinding(\.fgHex), supportsOpacity: false)
-                    ColorPicker("Background", selection: hexBinding(\.bgHex), supportsOpacity: false)
-                }
-
-                // Module styling is the web studio's signature vocabulary —
-                // QR only; other symbologies render through CoreImage/EAN
-                // paths that carry no shape options. Shapes are picked
-                // visually: you choose what you SEE, not a word in a menu.
-                if model.design.symbology == .qr {
-                    Section {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Dot shape").font(.subheadline)
-                            ShapeGallery(items: DotType.allCases,
-                                         selected: model.design.dotType,
-                                         title: { $0.title },
-                                         glyph: { dotGlyph(for: $0) }) { model.design.dotType = $0 }
-                        }
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Eye frame").font(.subheadline)
-                            ShapeGallery(items: CornerSquareType.allCases,
-                                         selected: model.design.cornerSquareType,
-                                         title: { $0.title },
-                                         glyph: { eyeFrameGlyph(for: $0) }) { model.design.cornerSquareType = $0 }
-                        }
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Eye dot").font(.subheadline)
-                            ShapeGallery(items: CornerDotType.allCases,
-                                         selected: model.design.cornerDotType,
-                                         title: { $0.title },
-                                         glyph: { eyeDotGlyph(for: $0) }) { model.design.cornerDotType = $0 }
-                        }
-                        Toggle("Gradient", isOn: $model.design.gradientEnabled)
-                        if model.design.gradientEnabled {
-                            ColorPicker("Gradient end", selection: hexBinding(\.gradientColor2Hex), supportsOpacity: false)
-                            Slider(value: $model.design.gradientRotation, in: 0...360, step: 15) {
-                                Text("Gradient angle")
-                            } minimumValueLabel: {
-                                Text("0°")
-                            } maximumValueLabel: {
-                                Text("360°")
-                            }
-                        }
-                        Toggle("Transparent background", isOn: $model.design.transparentBg)
-                    } header: {
-                        Text("Module style")
-                    } footer: {
-                        if model.design.dotType == .dots || model.design.transparentBg {
-                            Text("Stylized modules trade ink for looks — the scanability score reflects the cost. Test with a real camera before printing.")
-                        } else {
-                            Text("Rounded shapes keep nearly full ink coverage and scan like square modules.")
-                        }
-                    }
-                }
-
-                Section("Reliability") {
+                    // Curated looks: one tap applies a coherent design, and every
+                    // control below still allows fine-tuning.
                     if model.design.symbology == .qr {
-                        Picker("Error correction", selection: $model.design.errorLevel) {
-                            ForEach(ErrorLevel.allCases) { level in
-                                Text("\(level.rawValue) — \(level.recoveryPercent)% recovery").tag(level)
-                            }
+                        studioCard("Themes") {
+                            ThemeGallery(model: model)
                         }
                     }
-                    Stepper("Quiet zone: \(model.design.quietModules) modules", value: $model.design.quietModules, in: 0...10)
-                    if model.design.quietModules < 4 {
-                        Text("ISO/IEC 18004 requires a 4-module quiet zone.")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                    Stepper("Export size: \(model.design.exportSize)px", value: $model.design.exportSize, in: 256...4096, step: 256)
-                }
 
-                // Center logo is only safe on 2D symbologies with real error
-                // correction — occluding a linear code kills it, so the
-                // section disappears there instead of allowing a bad design.
-                if model.design.symbology.carriesRichPayload {
-                    Section("Center logo") {
-                        let hasLogo = model.design.logoPNG != nil
-                        PhotosPicker(selection: $logoItem, matching: .images) {
-                            Label(hasLogo ? "Replace logo" : "Choose logo", systemImage: "photo")
-                        }
-                        if model.design.logoPNG != nil {
-                            // Capped at 35% — RoundTripTests measured decode
-                            // failure beginning at 40% even at EC-H.
-                            Slider(value: $model.design.logoScale, in: 0.1...0.35) {
-                                Text("Logo scale")
-                            } minimumValueLabel: {
-                                Text("10%")
-                            } maximumValueLabel: {
-                                Text("35%")
-                            }
-                            Button("Remove logo", role: .destructive) {
-                                model.design.logoPNG = nil
-                            }
-                        }
+                    studioCard("Colors") {
+                        ColorPicker("Module color", selection: hexBinding(\.fgHex), supportsOpacity: false)
+                        ColorPicker("Background", selection: hexBinding(\.bgHex), supportsOpacity: false)
                     }
-                }
 
-                Section {
-                    // Disabled rather than silently ignored: the renderer drops
-                    // the band when the background is transparent.
-                    Toggle("Context band", isOn: $model.design.ctaEnabled)
-                        .disabled(model.design.transparentBg)
-                    if model.design.ctaEnabled, !model.design.transparentBg {
-                        TextField("Scan to view menu", text: $model.design.ctaText)
+                    // Module styling is the web studio's vocabulary, and QR only:
+                    // the other symbologies render through CoreImage or the EAN
+                    // encoder, which carry no shape options. Shapes are chosen by
+                    // looking at them, not by reading a menu.
+                    if model.design.symbology == .qr {
+                        studioCard("Module style") {
+                            shapeGallery("Dot shape", items: DotType.allCases, selected: model.design.dotType,
+                                         title: { $0.title }, glyph: { dotGlyph(for: $0) }) { model.design.dotType = $0 }
+                            shapeGallery("Eye frame", items: CornerSquareType.allCases, selected: model.design.cornerSquareType,
+                                         title: { $0.title }, glyph: { eyeFrameGlyph(for: $0) }) { model.design.cornerSquareType = $0 }
+                            shapeGallery("Eye dot", items: CornerDotType.allCases, selected: model.design.cornerDotType,
+                                         title: { $0.title }, glyph: { eyeDotGlyph(for: $0) }) { model.design.cornerDotType = $0 }
+                            Divider().overlay(Theme.hairline)
+                            Toggle("Gradient", isOn: $model.design.gradientEnabled)
+                            if model.design.gradientEnabled {
+                                ColorPicker("Gradient end", selection: hexBinding(\.gradientColor2Hex), supportsOpacity: false)
+                                Slider(value: $model.design.gradientRotation, in: 0...360, step: 15) {
+                                    Text("Gradient angle")
+                                } minimumValueLabel: {
+                                    Text("0°")
+                                } maximumValueLabel: {
+                                    Text("360°")
+                                }
+                            }
+                            Toggle("Transparent background", isOn: $model.design.transparentBg)
+                            Text("Stylized modules trade ink for looks, and the scanability score charges for it. A transparent code borrows its contrast from whatever it lands on.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                } footer: {
-                    if model.design.transparentBg {
-                        Text("Unavailable while the background is transparent — the band needs something to print on.")
-                    } else {
-                        Text("Prints a strip under the code: your call-to-action plus the destination, so people know what they're scanning before they scan it.")
+
+                    studioCard("Reliability") {
+                        if model.design.symbology == .qr {
+                            Picker("Error correction", selection: $model.design.errorLevel) {
+                                ForEach(ErrorLevel.allCases) { level in
+                                    Text("\(level.rawValue) — \(level.recoveryPercent)% recovery").tag(level)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
+                        Stepper("Quiet zone: \(model.design.quietModules) modules", value: $model.design.quietModules, in: 0...10)
+                        if model.design.quietModules < 4 {
+                            Text("ISO/IEC 18004 requires a 4-module quiet zone.")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                        Stepper("Export size: \(model.design.exportSize)px", value: $model.design.exportSize, in: 256...4096, step: 256)
+                    }
+
+                    // A centre logo is only safe on 2D symbologies with real
+                    // error correction: occluding a linear code kills it, so the
+                    // card disappears there rather than allowing a bad design.
+                    if model.design.symbology.carriesRichPayload {
+                        studioCard("Center logo") {
+                            let hasLogo = model.design.logoPNG != nil
+                            PhotosPicker(selection: $logoItem, matching: .images) {
+                                Label(hasLogo ? "Replace logo" : "Choose logo", systemImage: "photo")
+                            }
+                            if model.design.logoPNG != nil {
+                                // Capped at 35%: RoundTripTests measured decode
+                                // failure beginning at 40%, even at EC-H.
+                                Slider(value: $model.design.logoScale, in: 0.1...0.35) {
+                                    Text("Logo scale")
+                                } minimumValueLabel: {
+                                    Text("10%")
+                                } maximumValueLabel: {
+                                    Text("35%")
+                                }
+                                Button("Remove logo", role: .destructive) {
+                                    model.design.logoPNG = nil
+                                }
+                            }
+                        }
+                    }
+
+                    studioCard("Context band", footnote: model.design.transparentBg
+                        ? "Unavailable while the background is transparent — the band needs something to print on."
+                        : "Prints a strip under the code: your call-to-action and the destination, so people know what they are scanning before they scan it.") {
+                        // Disabled rather than silently ignored: the renderer
+                        // drops the band when the background is transparent.
+                        Toggle("Context band", isOn: $model.design.ctaEnabled)
+                            .disabled(model.design.transparentBg)
+                        if model.design.ctaEnabled, !model.design.transparentBg {
+                            TextField("Scan to view menu", text: $model.design.ctaText)
+                        }
                     }
                 }
+                .padding(.horizontal, Theme.gutter)
+                .padding(.vertical, Theme.tight)
             }
+            .background(Theme.page)
             .navigationTitle("Design")
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: logoItem) { _, item in
@@ -351,6 +335,41 @@ struct DesignView: View {
                     }
                 }
             }
+        }
+    }
+
+    /// One card of controls. A grouped `Form` made the studio read as Settings,
+    /// and the preview — the thing every control is acting on — read as one row
+    /// among many.
+    @ViewBuilder
+    private func studioCard<Content: View>(
+        _ title: String, footnote: String? = nil, @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Theme.cardPadding) {
+            Text(title).font(.headline)
+            content()
+            if let footnote {
+                Text(footnote).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .padding(Theme.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
+    }
+
+    /// A titled row of swatches, so each group of shapes reads as one choice.
+    @ViewBuilder
+    private func shapeGallery<Item: Identifiable & Hashable, Glyph: View>(
+        _ title: String,
+        items: [Item],
+        selected: Item,
+        title itemTitle: @escaping (Item) -> String,
+        glyph: @escaping (Item) -> Glyph,
+        onSelect: @escaping (Item) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Theme.tight) {
+            Text(title).font(.subheadline).foregroundStyle(.secondary)
+            ShapeGallery(items: items, selected: selected, title: itemTitle, glyph: glyph, onSelect: onSelect)
         }
     }
 
@@ -388,7 +407,12 @@ private struct DesignPreviewCell: View {
                         .foregroundStyle(.quaternary)
                 }
             }
-            .frame(width: 150, height: 150)
+            // The preview fills the card: this is the studio's subject, and a
+            // small symbol inside a wide card reads as an afterthought. A QR
+            // symbol is a diagram of pixels, so it takes a fixed size rather
+            // than scaling with the text around it.
+            .frame(maxWidth: .infinity)
+            .frame(height: 230)
             if !model.payload.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(model.summary)
                     .font(.caption)
@@ -511,23 +535,25 @@ private struct ShapeGallery<Item: Identifiable & Hashable, Glyph: View>: View {
                             withAnimation(.snappy(duration: 0.2)) { onSelect(item) }
                         } label: {
                             VStack(spacing: 6) {
+                                // The shape stays ink and the tile carries the
+                                // selection. An accent-coloured glyph inside an
+                                // accent tint read as one solid blue blob, and
+                                // the unselected tiles used the card's own grey.
                                 glyph(item)
-                                    .foregroundStyle(selected == item ? Color.accentColor : Color.primary.opacity(0.7))
+                                    .foregroundStyle(.primary)
                                     .frame(width: 26, height: 26)
                                     .frame(width: 52, height: 52)
                                     .background(
-                                        selected == item
-                                            ? Color.accentColor.opacity(0.12)
-                                            : Color(.secondarySystemGroupedBackground),
+                                        selected == item ? Theme.accent.opacity(0.12) : Theme.surfaceRaised,
                                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .stroke(selected == item ? Color.accentColor : .clear, lineWidth: 2)
+                                            .stroke(selected == item ? Theme.accent : .clear, lineWidth: 2)
                                     )
                                 Text(title(item))
                                     .font(.caption2)
-                                    .foregroundStyle(selected == item ? Color.accentColor : .secondary)
+                                    .foregroundStyle(selected == item ? Theme.accent : .secondary)
                             }
                         }
                         .buttonStyle(.plain)

@@ -1,13 +1,15 @@
 <table>
   <tr>
-    <td><img src="Screenshots/01-onboarding.png" width="240" alt="Onboarding"></td>
-    <td><img src="Screenshots/02-create.png" width="240" alt="The create surface: the code on a paper card with its scanability score, and the action pills"></td>
-    <td><img src="Screenshots/03-styled.png" width="240" alt="Fluid modules with a gradient and circular finder dots"></td>
+    <td><img src="Screenshots/01-onboarding.png" width="200" alt="Onboarding"></td>
+    <td><img src="Screenshots/02-create.png" width="200" alt="The create surface: the code on a paper card with its scanability score, and the action pills"></td>
+    <td><img src="Screenshots/03-styled.png" width="200" alt="Fluid modules with a gradient and circular finder dots"></td>
+    <td><img src="Screenshots/04-ean.png" width="200" alt="An EAN-13 barcode with verified check digits"></td>
   </tr>
   <tr>
-    <td><img src="Screenshots/04-ean.png" width="240" alt="An EAN-13 barcode with verified check digits"></td>
-    <td><img src="Screenshots/05-design.png" width="240" alt="The design studio: live preview, themes, colours and module shapes"></td>
-    <td><img src="Screenshots/06-scan.png" width="240" alt="The scanner, presented over the app and dark by design"></td>
+    <td><img src="Screenshots/05-design.png" width="200" alt="The design studio: the live preview, themes, colours and module shapes"></td>
+    <td><img src="Screenshots/06-scan.png" width="200" alt="The scanner, presented over the app and dark by design"></td>
+    <td><img src="Screenshots/07-library.png" width="200" alt="The library: saved codes as a searchable list"></td>
+    <td></td>
   </tr>
 </table>
 

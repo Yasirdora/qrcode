@@ -1,11 +1,21 @@
 import SwiftUI
 
-/// Saved codes — thumbnails render from the stored ContentState and
-/// DesignOptions; tapping one opens it in the studio.
+/// Saved codes.
+///
+/// A list rather than a grid: a code is identified by what it carries and when
+/// it was saved, and a row says both without making anyone open it to find out.
 struct LibraryView: View {
     @Bindable var model: AppModel
+    @State private var query = ""
 
-    private let columns = [GridItem(.adaptive(minimum: 150), spacing: 14)]
+    private var matches: [HistoryEntry] {
+        let needle = query.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !needle.isEmpty else { return model.history }
+        return model.history.filter {
+            PayloadBuilder.summarize($0.content).lowercased().contains(needle)
+                || $0.content.type.title.lowercased().contains(needle)
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -16,94 +26,111 @@ struct LibraryView: View {
                         systemImage: "square.grid.2x2",
                         description: Text("Codes you share or export land here for one-tap re-editing.")
                     )
+                } else if matches.isEmpty {
+                    ContentUnavailableView.search(text: query)
                 } else {
-                    ScrollView {
-                        LazyVGrid(columns: columns, spacing: 14) {
-                            ForEach(model.history) { entry in
-                                // A real Button rather than onTapGesture plus an
-                                // .isButton trait: VoiceOver announced that one
-                                // correctly, but Switch Control and Full Keyboard
-                                // Access could not activate it.
-                                Button {
-                                    Haptics.selection()
-                                    model.restore(entry)
+                    List {
+                        ForEach(matches) { entry in
+                            // A Button rather than onTapGesture with an
+                            // .isButton trait: the trait made VoiceOver announce
+                            // it correctly, but Switch Control and Full Keyboard
+                            // Access could not activate it.
+                            Button {
+                                Haptics.selection()
+                                model.restore(entry)
+                            } label: {
+                                LibraryRow(entry: entry)
+                            }
+                            .buttonStyle(.plain)
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    model.deleteHistory(entry.id)
                                 } label: {
-                                    HistoryCard(entry: entry)
-                                }
-                                .buttonStyle(.plain)
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        model.deleteHistory(entry.id)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
+                                    Label("Delete", systemImage: "trash")
                                 }
                             }
                         }
-                        .padding(Theme.gutter)
                     }
+                    .listStyle(.plain)
+                    // The search field belongs to the list that it filters, not
+                    // to the container: attached outside the scroll view it
+                    // rendered as a detached band above the rows.
+                    // Placement is explicit: the default put the field at the
+                    // bottom of the screen on this OS version, where the custom
+                    // bar sits, leaving it half-hidden behind the tabs.
+                    .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
+                                prompt: "What a code carries")
+                    .scrollContentBackground(.hidden)
                     .background(Theme.page)
                 }
             }
-            // No dismissal: this is a destination. Restoring a code moves to the
-            // studio through the bar rather than closing anything.
+            // No dismissal: this is a destination, and restoring a code moves to
+            // the studio through the bar rather than closing anything.
             .navigationTitle("Library")
         }
     }
 }
 
 /// One saved code: the symbol, what it carries, and when it was saved.
-private struct HistoryCard: View {
+private struct LibraryRow: View {
     let entry: HistoryEntry
     @State private var thumbnail: UIImage?
 
+    private var kind: String {
+        entry.design.symbology.carriesRichPayload
+            ? entry.content.type.title
+            : entry.design.symbology.title
+    }
+
     var body: some View {
-        VStack(spacing: Theme.tight) {
+        HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: Theme.control, style: .continuous)
-                    .fill(Theme.surface)
-                    .aspectRatio(1, contentMode: .fit)
+                    .fill(Theme.paper)
                 if let thumbnail {
                     Image(uiImage: thumbnail)
                         .resizable()
-                        // Rendered at 300px and shown at ~450px on a 3× screen,
-                        // so this is an upscale: nearest-neighbour turns every
-                        // module into a visible block of uneven size.
+                        // Rendered at 240px for a 44pt row: an upscale, so
+                        // nearest-neighbour would show unevenly sized modules.
                         .interpolation(.high)
                         .scaledToFit()
-                        .padding(12)
+                        .padding(3)
                 }
             }
-            HStack {
-                Text(entry.design.symbology.carriesRichPayload ? entry.content.type.title : entry.design.symbology.title)
-                    .font(.caption2.weight(.medium))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Theme.surfaceRaised, in: Capsule())
-                Spacer()
-                Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+            .frame(width: 44, height: 44)
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.control, style: .continuous)
+                    .stroke(Theme.hairline, lineWidth: 0.5)
+            )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(PayloadBuilder.summarize(entry.content))
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+                Text(kind)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Text(PayloadBuilder.summarize(entry.content))
+
+            Spacer(minLength: Theme.tight)
+
+            Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
                 .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .foregroundStyle(.tertiary)
         }
-        .padding(10)
-        .panel(cornerRadius: Theme.card)
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
         .task {
             let payload = PayloadBuilder.payload(for: entry.content, symbology: entry.design.symbology)
-            var thumbDesign = entry.design
-            thumbDesign.exportSize = 300
+            var design = entry.design
+            design.exportSize = 240
             thumbnail = await Task.detached(priority: .utility) {
-                QRRenderer.image(payload: payload, design: thumbDesign)
+                QRRenderer.image(payload: payload, design: design)
             }.value
         }
-        // The enclosing Button supplies the button trait; the label only has to
+        // The enclosing Button supplies the button trait; this label only has to
         // say what the code is and what tapping it does.
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(entry.content.type.title) code, \(PayloadBuilder.summarize(entry.content)). Opens in the studio.")
+        .accessibilityLabel("\(kind) code, \(PayloadBuilder.summarize(entry.content)). Opens in the studio.")
     }
 }

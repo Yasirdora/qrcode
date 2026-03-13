@@ -315,7 +315,9 @@ struct DesignView: View {
                     }
                 }
                 .padding(.horizontal, Theme.gutter)
-                .padding(.vertical, Theme.tight)
+                .padding(.top, Theme.tight)
+                // Clearance above the floating bar, as on the create surface.
+                .padding(.bottom, Theme.gutter * 1.5)
             }
             .background(Theme.page)
             .navigationTitle("Design")

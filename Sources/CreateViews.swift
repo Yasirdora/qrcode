@@ -19,19 +19,17 @@ struct CreateView: View {
             ScrollView {
                 VStack(spacing: Theme.gutter) {
                     heroCard
-                    // The actions only exist once there is something to act on;
-                    // the empty state above says what to do instead of offering
-                    // buttons that cannot work.
-                    if preview != nil {
-                        actionBar
-                    }
                     if model.design.symbology.carriesRichPayload {
                         modeStrip
                     }
                     contentCard
                 }
                 .padding(.horizontal, Theme.gutter)
-                .padding(.vertical, Theme.tight)
+                .padding(.top, Theme.tight)
+                // Real clearance above the floating bar. The content used to run
+                // straight under it, so the last card read as clipped rather than
+                // as something you could scroll to.
+                .padding(.bottom, Theme.gutter * 1.5)
             }
             .background(Theme.page)
             // No large title: the leading pill names the symbology, the bar names
@@ -40,7 +38,8 @@ struct CreateView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     symbologyMenu
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    exportMenu
                     overflowMenu
                 }
             }
@@ -155,43 +154,39 @@ struct CreateView: View {
         .accessibilityLabel("Scanability \(model.report.score) of 100, \(model.report.grade). Opens the full report.")
     }
 
-    /// The three things a person does with a finished code, as pills rather than
-    /// toolbar glyphs: share it, save a raster, save a vector. Print-grade PDF,
-    /// batching and reset live behind the overflow.
-    private var actionBar: some View {
-        HStack(spacing: Theme.tight) {
+    /// One export control for one verb. Getting a code out of the app is a
+    /// single action with three formats; a control per format would claim three
+    /// actions and crowd the toolbar. Print-grade PDF, batching and reset stay
+    /// in the overflow.
+    private var exportMenu: some View {
+        Menu {
             if let preview {
                 ShareLink(item: Image(uiImage: preview),
                           preview: SharePreview(model.summary, image: Image(uiImage: preview))) {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                        .frame(maxWidth: .infinity)
+                    Label("Share Image…", systemImage: "square.and.arrow.up")
                 }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
                 .simultaneousGesture(TapGesture().onEnded { model.saveToHistory() })
-            }
-            Button {
-                export(.png)
-            } label: {
-                Label("Save", systemImage: "square.and.arrow.down")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
-            // Vector output is QR-only: the other symbologies are CoreImage
-            // bitmaps with no module geometry to serialise, so the pill appears
-            // only where it can be honoured.
-            if model.design.symbology == .qr {
                 Button {
-                    export(.svg)
+                    export(.png)
                 } label: {
-                    Text("SVG").frame(maxWidth: .infinity)
+                    Label("Save PNG", systemImage: "photo")
                 }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .accessibilityLabel("Save as SVG")
+                // Vector output is QR-only: the other symbologies are CoreImage
+                // bitmaps with no module geometry to serialise, so the option
+                // appears only where it can be honoured.
+                if model.design.symbology == .qr {
+                    Button {
+                        export(.svg)
+                    } label: {
+                        Label("Save SVG", systemImage: "scribble.variable")
+                    }
+                }
             }
+        } label: {
+            Image(systemName: "square.and.arrow.up")
         }
+        .disabled(preview == nil)
+        .accessibilityLabel("Export code")
     }
 
     /// The fields, in a card rather than a grouped list: a list made this read

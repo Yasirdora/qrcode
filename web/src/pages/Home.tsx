@@ -59,7 +59,10 @@ export default function Home() {
   }, [])
 
   const payload = useMemo(() => buildPayload(content), [content])
-  const report = useMemo(() => scoreScanability(payload, design), [payload, design])
+  const report = useMemo(
+    () => (payload.trim() ? scoreScanability(payload, design) : null),
+    [payload, design],
+  )
 
   const persist = () => {
     const entry: HistoryEntry = {
@@ -151,15 +154,8 @@ export default function Home() {
 
       <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground">
-            <QrCode className="h-5 w-5 text-background" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold leading-tight">Qr.Code</h1>
-            <p className="text-[11px] text-muted-foreground leading-tight">
-              Privacy-first QR design studio — 100% offline, zero tracking
-            </p>
-          </div>
+          <img src="./icon.svg" alt="" className="h-9 w-9 rounded-lg" />
+          <h1 className="text-sm font-bold">Qr.Code</h1>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-[11px] text-muted-foreground sm:flex">
               <ShieldCheck className="h-3.5 w-3.5" /> Client-side only
@@ -223,9 +219,11 @@ export default function Home() {
                     <p className="truncate text-xs font-medium">
                       {payload.trim() ? summarizeContent(content) : 'Empty code'}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Scanability {report.score}/100 · {report.grade}
-                    </p>
+                    {report && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Scanability {report.score}/100 · {report.grade}
+                      </p>
+                    )}
                   </div>
                 </div>
 

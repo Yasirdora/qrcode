@@ -21,6 +21,7 @@
 		A1000000000000000000001B /* ScanViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004B /* ScanViews.swift */; };
 		A1000000000000000000001C /* Scanability.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004C /* Scanability.swift */; };
 		A1000000000000000000001D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004D /* PrivacyInfo.xcprivacy */; };
+		A1000000000000000000005B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000005A /* Assets.xcassets */; };
 		A1000000000000000000001E /* PayloadBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004E /* PayloadBuilderTests.swift */; };
 		A1000000000000000000001F /* ScanabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004F /* ScanabilityTests.swift */; };
 		A10000000000000000000022 /* EANEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000052 /* EANEncoder.swift */; };
@@ -85,6 +86,7 @@
 		A1000000000000000000004B /* ScanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViews.swift; sourceTree = "<group>"; };
 		A1000000000000000000004C /* Scanability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanability.swift; sourceTree = "<group>"; };
 		A1000000000000000000004D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A1000000000000000000005A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000000000000000000004E /* PayloadBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayloadBuilderTests.swift; sourceTree = "<group>"; };
 		A1000000000000000000004F /* ScanabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanabilityTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000050 /* QRFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QRFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -155,6 +157,7 @@
 				A1000000000000000000004C /* Scanability.swift */,
 				A10000000000000000000054 /* StyledQRRenderer.swift */,
 				A1000000000000000000004D /* PrivacyInfo.xcprivacy */,
+				A1000000000000000000005A /* Assets.xcassets */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -295,6 +298,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000000000000000000001D /* PrivacyInfo.xcprivacy in Resources */,
+				A1000000000000000000005B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -376,6 +380,7 @@
 		A100000000000000000000B0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -404,6 +409,7 @@
 		A100000000000000000000B1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;

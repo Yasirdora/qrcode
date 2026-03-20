@@ -154,7 +154,7 @@ export default function Home() {
 
       <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
-          <img src="./icon.svg" alt="" className="h-9 w-9 rounded-lg" />
+          <img src="./mark-192.png" alt="" className="h-9 w-9" />
           <h1 className="text-sm font-bold">Qr.Code</h1>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-[11px] text-muted-foreground sm:flex">

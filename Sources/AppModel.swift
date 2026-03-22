@@ -34,6 +34,9 @@ final class AppModel {
     var content = ContentState()
     var design = DesignOptions()
     private(set) var history: [HistoryEntry] = []
+    /// Set by the -ui-typing launch hook so the create surface can be captured
+    /// in its keyboard-up layout; never set in normal use.
+    var uiTyping = false
 
     var toast: String?
     private var toastTask: Task<Void, Never>?
@@ -91,6 +94,11 @@ final class AppModel {
         }
         if args.contains("-ui-design") {
             tab = .design
+        }
+        // -ui-typing shows the create surface in its keyboard-up layout so the
+        // collapsed hero can be captured headlessly.
+        if args.contains("-ui-typing") {
+            uiTyping = true
         }
         if args.contains("-ui-seed-history"), history.isEmpty {
             history = [HistoryEntry(id: UUID(), createdAt: Date(),

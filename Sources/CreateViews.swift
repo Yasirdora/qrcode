@@ -13,6 +13,11 @@ struct CreateView: View {
     @State private var exporterPresented = false
     @State private var scoreSheetPresented = false
     @State private var batchPresented = false
+    /// The keyboard is a surface of its own: while it is up, the full hero
+    /// steps aside rather than pushing the field it competes with off the
+    /// screen. The same event the bar reads in ShellView — a different
+    /// answer to it.
+    @State private var typing = false
 
     var body: some View {
         NavigationStack {
@@ -30,8 +35,13 @@ struct CreateView: View {
                 // straight under it, so the last card read as clipped rather than
                 // as something you could scroll to.
                 .padding(.bottom, Theme.gutter * 1.5)
+                // Tapping anywhere that is not a control puts the keyboard away.
+                .contentShape(Rectangle())
+                .onTapGesture { dismissKeyboard() }
             }
-            .background(Theme.page)
+            // Drag to put the keyboard away, the way system lists behave.
+            .scrollDismissesKeyboard(.interactively)
+            .background(Theme.page.onTapGesture { dismissKeyboard() })
             // No large title: the leading pill names the symbology, the bar names
             // the destinations. A third title would be chrome.
             .toolbar {
@@ -41,6 +51,10 @@ struct CreateView: View {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     exportMenu
                     overflowMenu
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { dismissKeyboard() }
                 }
             }
             // The scanability report stays a sheet: it is a detail you consult
@@ -56,6 +70,13 @@ struct CreateView: View {
             // re-rendering per character.
             .task(id: model.content) { await regenerate() }
             .task(id: model.design) { await regenerate() }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                typing = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                typing = false
+            }
+            .onAppear { if model.uiTyping { typing = true } }
             .fileExporter(isPresented: $exporterPresented, document: exportDocument, contentType: exportType, defaultFilename: "qrcode-\(model.design.symbology.rawValue)") { result in
                 switch result {
                 case .success:
@@ -71,10 +92,65 @@ struct CreateView: View {
 
     // MARK: Hero and actions
 
-    /// The code is the point of the screen, so it gets the one surface that is
-    /// not chrome: paper. The score is attached to it rather than sitting in a
-    /// row of its own, because the score is a property of this code.
+    /// The hero has two sizes. The full one is the code at the size it is
+    /// meant to be seen, on the one surface that is not chrome: paper. While
+    /// the keyboard is up it collapses to a strip — thumbnail, summary, score —
+    /// so the field being typed into keeps the screen.
     private var heroCard: some View {
+        Group {
+            if typing {
+                compactHero
+            } else {
+                fullHero
+            }
+        }
+        .animation(.snappy(duration: 0.25), value: typing)
+    }
+
+    private var compactHero: some View {
+        HStack(spacing: Theme.tight) {
+            Group {
+                if let preview {
+                    Image(uiImage: preview)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                } else {
+                    Image(systemName: "qrcode")
+                        .font(.system(size: 26))
+                        .foregroundStyle(Theme.ink.opacity(0.22))
+                }
+            }
+            .frame(width: 54, height: 54)
+            .padding(6)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(preview != nil && !model.payload.isEmpty
+                     ? model.summary
+                     : "Enter content to activate this code")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.ink.opacity(0.7))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                if preview != nil, !model.payload.isEmpty {
+                    Text("Scanability \(model.report.score) · \(model.report.grade)")
+                        .font(.caption)
+                        .foregroundStyle(Theme.ink.opacity(0.5))
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(Theme.cardPadding)
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
+                .stroke(Theme.hairline, lineWidth: 0.5)
+        )
+    }
+
+    /// The full paper card: the code at the size it is meant to be seen.
+    private var fullHero: some View {
         VStack(spacing: 0) {
             Group {
                 if let preview {
@@ -321,6 +397,14 @@ struct CreateView: View {
     }
 
     // MARK: Actions
+
+    /// Resigns the first responder — one dismissal that works for every
+    /// field in the form without threading focus state through all of them,
+    /// and the same call the Done button above the keyboard makes.
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                        to: nil, from: nil, for: nil)
+    }
 
     private func regenerate() async {
         // Debounce only once a preview exists — the first render should be

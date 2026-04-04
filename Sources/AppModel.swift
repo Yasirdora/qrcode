@@ -100,6 +100,11 @@ final class AppModel {
         if args.contains("-ui-typing") {
             uiTyping = true
         }
+        // -ui-demo plays a scripted tour through the real UI state for the
+        // README's demo clip.
+        if args.contains("-ui-demo") {
+            UIDemo.run(self)
+        }
         if args.contains("-ui-seed-history"), history.isEmpty {
             history = [HistoryEntry(id: UUID(), createdAt: Date(),
                                     content: ContentState(), design: DesignOptions())]

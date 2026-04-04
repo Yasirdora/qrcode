@@ -21,6 +21,7 @@
 		A1000000000000000000001B /* ScanViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004B /* ScanViews.swift */; };
 		A1000000000000000000001C /* Scanability.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004C /* Scanability.swift */; };
 		A1000000000000000000001D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004D /* PrivacyInfo.xcprivacy */; };
+		A1000000000000000000005C /* UIDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000005D /* UIDemo.swift */; };
 		A1000000000000000000005B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000005A /* Assets.xcassets */; };
 		A1000000000000000000001E /* PayloadBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004E /* PayloadBuilderTests.swift */; };
 		A1000000000000000000001F /* ScanabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000004F /* ScanabilityTests.swift */; };
@@ -86,6 +87,7 @@
 		A1000000000000000000004B /* ScanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViews.swift; sourceTree = "<group>"; };
 		A1000000000000000000004C /* Scanability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanability.swift; sourceTree = "<group>"; };
 		A1000000000000000000004D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A1000000000000000000005D /* UIDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIDemo.swift; sourceTree = "<group>"; };
 		A1000000000000000000005A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000000000000000000004E /* PayloadBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayloadBuilderTests.swift; sourceTree = "<group>"; };
 		A1000000000000000000004F /* ScanabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanabilityTests.swift; sourceTree = "<group>"; };
@@ -156,6 +158,7 @@
 				A1000000000000000000004B /* ScanViews.swift */,
 				A1000000000000000000004C /* Scanability.swift */,
 				A10000000000000000000054 /* StyledQRRenderer.swift */,
+				A1000000000000000000005D /* UIDemo.swift */,
 				A1000000000000000000004D /* PrivacyInfo.xcprivacy */,
 				A1000000000000000000005A /* Assets.xcassets */,
 			);
@@ -317,6 +320,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000010 /* AppModel.swift in Sources */,
+				A1000000000000000000005C /* UIDemo.swift in Sources */,
 				A10000000000000000000011 /* ComponentViews.swift in Sources */,
 				A10000000000000000000012 /* CreateFormViews.swift in Sources */,
 				A10000000000000000000013 /* CreateViews.swift in Sources */,

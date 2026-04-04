@@ -1,3 +1,10 @@
+<p align="center">
+  <img src="Screenshots/demo.gif" width="300" alt="Typing a URL and watching the code build itself, styling it in the studio, and landing on a finished code with an honest scanability score">
+</p>
+<p align="center">
+  <a href="Screenshots/demo.mp4">Watch in full quality (MP4)</a>
+</p>
+
 <table>
   <tr>
     <td><img src="Screenshots/01-onboarding.png" width="200" alt="Onboarding"></td>

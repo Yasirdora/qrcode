@@ -5,21 +5,6 @@
   <a href="Screenshots/demo.mp4">Watch in full quality (MP4)</a>
 </p>
 
-<table>
-  <tr>
-    <td><img src="Screenshots/01-onboarding.png" width="200" alt="Onboarding"></td>
-    <td><img src="Screenshots/02-create.png" width="200" alt="The create surface: the code on a paper card with its scanability score, and the action pills"></td>
-    <td><img src="Screenshots/03-styled.png" width="200" alt="Fluid modules with a gradient and circular finder dots"></td>
-    <td><img src="Screenshots/04-ean.png" width="200" alt="An EAN-13 barcode with verified check digits"></td>
-  </tr>
-  <tr>
-    <td><img src="Screenshots/05-design.png" width="200" alt="The design studio: the live preview, themes, colours and module shapes"></td>
-    <td><img src="Screenshots/06-scan.png" width="200" alt="The scanner, presented over the app and dark by design"></td>
-    <td><img src="Screenshots/07-library.png" width="200" alt="The library: saved codes as a searchable list"></td>
-    <td></td>
-  </tr>
-</table>
-
 # Qr.Code
 
 A QR code design studio in two implementations, sharing a payload vocabulary, a

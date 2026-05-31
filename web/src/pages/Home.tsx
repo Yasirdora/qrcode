@@ -289,7 +289,14 @@ export default function Home() {
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
         Qr.Code — every byte stays in your browser. Built with React, TypeScript, qr-code-styling
-        and jsQR. Open source on GitHub.
+        and jsQR.{' '}
+        <a
+          href="https://github.com/Yasirdora/qrcode"
+          className="underline underline-offset-2 transition-colors hover:text-foreground"
+        >
+          Open source on GitHub
+        </a>
+        .
       </footer>
     </div>
   )

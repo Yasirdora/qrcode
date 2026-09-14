@@ -11,7 +11,7 @@ A QR code design studio in two implementations, sharing a payload vocabulary, a
 scanability model and a design language.
 
 - **iOS app** — `Sources/`, `Tests/`, `ShareExtension/`. Swift 6, SwiftUI and
-  Vision; generates and scans QR, Aztec, PDF417, Code 128, EAN-13 and EAN-8.
+  Vision, targeting iOS 27; generates and scans QR, Aztec, PDF417, Code 128, EAN-13 and EAN-8.
 - **Web studio** — `web/`. React 19, TypeScript and Vite; adds SVG export and
   bulk CSV generation. This is the app the iOS edition is a port of.
 
@@ -77,7 +77,7 @@ no UI imports below the view layer.
 
 ## Build
 
-Requires Xcode 26 or newer; the deployment target is iOS 26.0.
+Requires Xcode 27; the deployment target is iOS 27.0.
 
 ```bash
 open QRFlow.xcodeproj
@@ -118,8 +118,8 @@ and never leave it. The privacy manifest declares one UserDefaults reason
 
 ## Known limitations
 
-- **iOS 26.0 minimum.** No `#available` fallbacks, which narrows the audience
-  for a utility people install on whatever phone they have.
+- **iOS 27.0 minimum.** The floor tracks the current release; older phones
+  are out by choice, without `#available` fallbacks.
 - **The Siri and Shortcuts intent stores the Wi-Fi password in plain text.**
   Shortcuts persists every parameter in the shortcut definition and its run
   history, and an app cannot mask or exclude it. The in-app field is a
